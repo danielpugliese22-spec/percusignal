@@ -1,0 +1,8 @@
+# IMPORTANTE: las functions deben pasar SIN redirigir
+/.netlify/functions/*  /.netlify/functions/:splat  200
+
+# Redirigir /app a /app/
+/app  /app/  200
+
+# SPA fallback al final (NO toca /app/ ni /.netlify/)
+/*    /index.html   200
