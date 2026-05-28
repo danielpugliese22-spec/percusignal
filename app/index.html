@@ -266,7 +266,7 @@ header {
   position: relative;
 }
 .instr-btn:active { transform: scale(0.95); }
-.instr-btn { min-height: 80px; }
+.instr-btn { min-height: 78px; }
 .instr-btn.active {
   background: var(--fill1);
   border-color: var(--i-color);
@@ -281,25 +281,59 @@ header {
 }
 .instr-btn.active .instr-name { color: var(--i-color); }
 
-/* Volume slider thumb */
-.instr-btn input[type="range"]::-webkit-slider-thumb {
+/* ── Slider vertical delicado tipo Apple ── */
+.vol-slider-vertical {
   -webkit-appearance: none;
   appearance: none;
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: #fff;
+  width: 3px;
+  height: 48px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  outline: none;
   cursor: pointer;
-  border: 1px solid rgba(0,0,0,0.15);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  margin: 0;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  position: relative;
+  transition: background .15s, width .15s;
 }
-.instr-btn input[type="range"]::-moz-range-thumb {
-  width: 11px;
-  height: 11px;
+.vol-slider-vertical:hover {
+  background: rgba(255,255,255,0.12);
+  width: 4px;
+}
+/* Thumb circular pequeño */
+.vol-slider-vertical::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--track-color, #fff);
+  border: 1.5px solid rgba(255,255,255,0.9);
   cursor: pointer;
-  border: 1px solid rgba(0,0,0,0.15);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transition: transform .15s, box-shadow .15s;
+}
+.vol-slider-vertical::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.vol-slider-vertical::-webkit-slider-thumb:active {
+  transform: scale(1.4);
+}
+.vol-slider-vertical::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--track-color, #fff);
+  border: 1.5px solid rgba(255,255,255,0.9);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.vol-slider-vertical::-moz-range-track {
+  background: rgba(255,255,255,0.06);
+  width: 3px;
+  border-radius: 2px;
 }
 .mute-dot {
   position: absolute;
@@ -4522,30 +4556,30 @@ document.addEventListener('DOMContentLoaded',()=>{
     btn.id = `instrBtn_${inst.id}`;
     btn.className = 'instr-btn' + (inst.id==='conga' ? ' active' : '');
     btn.style.setProperty('--i-color', inst.color);
-    btn.style.cssText += ';position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px 6px;';
+    btn.style.cssText += ';position:relative;display:grid;grid-template-columns:1fr auto;align-items:stretch;gap:4px;padding:6px 4px 6px 4px;min-height:78px';
 
-    // Main content
+    // Main content (icon + name + buttons)
     const top = document.createElement('div');
-    top.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none';
-    top.innerHTML = `<div data-icon-slot style="width:54px;height:74px;display:flex;align-items:center;justify-content:center;position:relative">${inst.emoji}</div><span style="font-size:10px;font-weight:500;color:var(--label2)">${inst.name}</span>`;
-    // Agregar candado solo si está bloqueado (como elemento separado, para poder removerlo después)
+    top.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;min-width:0';
+    top.innerHTML = `<div data-icon-slot style="width:42px;height:54px;display:flex;align-items:center;justify-content:center;position:relative">${inst.emoji}</div><span style="font-size:9px;font-weight:500;color:var(--label2);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${inst.name}</span>`;
+    // Lock badge
     if(isInstrumentLocked(inst.id)) {
       const slot = top.querySelector('[data-icon-slot]');
       const lockBadge = document.createElement('span');
       lockBadge.className = 'lock-badge';
-      lockBadge.style.cssText = 'position:absolute;bottom:-2px;right:-2px;font-size:11px;background:#000;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;z-index:2';
+      lockBadge.style.cssText = 'position:absolute;bottom:-2px;right:-2px;font-size:10px;background:#000;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;z-index:2';
       lockBadge.textContent = '🔒';
       slot.appendChild(lockBadge);
     }
     if(isInstrumentLocked(inst.id)) btn.style.opacity = '0.6';
 
-    // Mute + Loop row
+    // Mute + Loop row (debajo del nombre)
     const row = document.createElement('div');
-    row.style.cssText = 'display:flex;gap:4px;margin-top:2px';
+    row.style.cssText = 'display:flex;gap:3px;margin-top:2px;pointer-events:auto';
 
     const muteBtn = document.createElement('button');
     muteBtn.id = `muteBtn_${inst.id}`;
-    muteBtn.style.cssText = 'padding:2px 6px;border-radius:4px;border:1px solid var(--separator);background:var(--fill2);color:var(--label3);font-size:9px;cursor:pointer;transition:all .15s;font-family:var(--font)';
+    muteBtn.style.cssText = 'padding:1px 5px;border-radius:3px;border:1px solid var(--separator);background:var(--fill2);color:var(--label3);font-size:8px;cursor:pointer;transition:all .15s;font-family:var(--font);line-height:1.2';
     muteBtn.textContent = 'M';
     muteBtn.onclick = (e) => {
       e.stopPropagation();
@@ -4558,7 +4592,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
     const loopBtn = document.createElement('button');
     loopBtn.id = `loopBtn_${inst.id}`;
-    loopBtn.style.cssText = 'padding:2px 6px;border-radius:4px;border:1px solid var(--separator);background:var(--fill2);color:var(--label3);font-size:9px;cursor:pointer;transition:all .15s;font-family:var(--font)';
+    loopBtn.style.cssText = 'padding:1px 5px;border-radius:3px;border:1px solid var(--separator);background:var(--fill2);color:var(--label3);font-size:8px;cursor:pointer;transition:all .15s;font-family:var(--font);line-height:1.2';
     loopBtn.textContent = '↺';
     loopBtn.onclick = (e) => {
       e.stopPropagation();
@@ -4572,44 +4606,43 @@ document.addEventListener('DOMContentLoaded',()=>{
 
     row.appendChild(muteBtn);
     row.appendChild(loopBtn);
+    top.appendChild(row);
     btn.appendChild(top);
-    btn.appendChild(row);
 
-    // Volume slider
+    // VERTICAL Volume slider (a la derecha de la card)
     const volWrap = document.createElement('div');
-    volWrap.style.cssText = 'display:flex;align-items:center;gap:4px;margin-top:3px;width:100%;padding:0 2px';
+    volWrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:auto;padding:4px 6px 4px 2px';
     
-    const volIcon = document.createElement('span');
-    volIcon.style.cssText = 'font-size:10px;opacity:.6;flex-shrink:0';
+    // Icono de volumen arriba
+    const volIcon = document.createElement('div');
+    volIcon.style.cssText = 'font-size:9px;opacity:.5;line-height:1';
     volIcon.textContent = '🔊';
+    volWrap.appendChild(volIcon);
     
     const volSlider = document.createElement('input');
     volSlider.type = 'range';
     volSlider.min = '0';
     volSlider.max = '200';
     volSlider.value = String(Math.round((volumeState[inst.id] ?? 1.0) * 100));
-    volSlider.style.cssText = `flex:1;height:3px;-webkit-appearance:none;appearance:none;background:linear-gradient(to right, ${inst.color} 0%, ${inst.color} ${volSlider.value/2}%, var(--separator) ${volSlider.value/2}%, var(--separator) 100%);border-radius:2px;outline:none;cursor:pointer;min-width:0`;
+    volSlider.className = 'vol-slider-vertical';
+    volSlider.style.setProperty('--track-color', inst.color);
     volSlider.title = `Volumen ${volSlider.value}%`;
+    volSlider.dataset.instr = inst.id;
     
     volSlider.oninput = (e) => {
       e.stopPropagation();
       const val = parseInt(volSlider.value);
       setInstrumentVolume(inst.id, val / 100);
-      volSlider.style.background = `linear-gradient(to right, ${inst.color} 0%, ${inst.color} ${val/2}%, var(--separator) ${val/2}%, var(--separator) 100%)`;
       volSlider.title = `Volumen ${val}%`;
     };
     volSlider.onclick = (e) => e.stopPropagation();
-    
-    // Doble click → reset a 100%
     volSlider.ondblclick = (e) => {
       e.stopPropagation();
       volSlider.value = '100';
       setInstrumentVolume(inst.id, 1.0);
-      volSlider.style.background = `linear-gradient(to right, ${inst.color} 0%, ${inst.color} 50%, var(--separator) 50%, var(--separator) 100%)`;
       volSlider.title = `Volumen 100%`;
     };
     
-    volWrap.appendChild(volIcon);
     volWrap.appendChild(volSlider);
     btn.appendChild(volWrap);
 
