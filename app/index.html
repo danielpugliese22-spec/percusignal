@@ -931,6 +931,8 @@ input[type=range].bpm-slider::-webkit-slider-thumb {
         <button class="seg-btn" onclick="setCompas('2/4');segActive('segCompas',this)">2/4</button>
         <button class="seg-btn active" onclick="setCompas('4/4');segActive('segCompas',this)">4/4</button>
         <button class="seg-btn" onclick="setCompas('3/4');segActive('segCompas',this)">3/4</button>
+        <button class="seg-btn" onclick="setCompas('6/8');segActive('segCompas',this)">6/8</button>
+        <button class="seg-btn" onclick="setCompas('3/3');segActive('segCompas',this)">3/3</button>
       </div>
 
       <!-- BPM -->
@@ -1035,6 +1037,286 @@ input[type=range].bpm-slider::-webkit-slider-thumb {
 </div><!-- /app -->
 
 <script>// ═══════════════════════════════════════════════════════════════
+//  PRODUCT TOUR INTERACTIVO
+// ═══════════════════════════════════════════════════════════════
+
+const TOUR_STEPS = [
+  {
+    target: '#btnStart',
+    title: '1. Activá la cámara',
+    desc: 'Acá empieza todo. Cuando hagas click, el navegador te va a pedir permiso para usar la cámara. La IA detecta tus dedos 100% local — nada sale de tu dispositivo.',
+    placement: 'right'
+  },
+  {
+    target: '.instr-grid',
+    title: '2. Elegí instrumento',
+    desc: 'Tu plan Free incluye conga y clave. Premium desbloquea los 6 (surdo, campana, cajón, shekeré). Cada uno tiene su slider de volumen y botones Mute / Loop.',
+    placement: 'right'
+  },
+  {
+    target: '#btnVoice',
+    title: '3. Captura por voz (opcional)',
+    desc: 'Activala y decí "ya", "captura" o "toma" para grabar sin tocar la pantalla. Ideal para profesores que dirigen con señas y quieren las manos libres.',
+    placement: 'bottom'
+  },
+  {
+    target: '#btnCapture',
+    title: '4. Capturar el patrón',
+    desc: 'Cuando tu mano tenga la seña lista, hacé click acá (o decí "ya"). El compás se guarda en el pentagrama. Podés cambiar de instrumento y agregar otra pista encima.',
+    placement: 'bottom'
+  },
+  {
+    target: '#segCompas',
+    title: '5. Métrica musical',
+    desc: '2/4 para marchas. 4/4 para todo lo popular. 3/4 para vals. 6/8 para chacarera/candombe. 3/3 captura en 3 pasos para ritmos compuestos.',
+    placement: 'bottom'
+  },
+  {
+    target: '#btnPlay',
+    title: '6. Reproducir',
+    desc: 'Toca lo que armaste, en loop. Vas a ver el playhead amarillo moverse por el pentagrama y el metrónomo arriba marcando el tempo.',
+    placement: 'bottom'
+  },
+  {
+    target: '.toolbar',
+    title: '7. Compartir, guardar, exportar',
+    desc: '🔗 Compartir genera un link para enviar tu composición · 💾 Guardar/Cargar trabaja con archivos · 🎵 Exportar baja el audio como WAV.',
+    placement: 'bottom'
+  },
+];
+
+let tourCurrentStep = 0;
+let tourSpotlightEl = null;
+let tourTooltipEl = null;
+
+function startProductTour() {
+  if(localStorage.getItem('tour_done')) return;
+  tourCurrentStep = 0;
+  renderTourStep();
+}
+
+function renderTourStep() {
+  cleanupTour();
+  
+  if(tourCurrentStep >= TOUR_STEPS.length) {
+    finishTour();
+    return;
+  }
+  
+  const step = TOUR_STEPS[tourCurrentStep];
+  const target = document.querySelector(step.target);
+  
+  if(!target) {
+    console.warn('[Tour] Target no encontrado:', step.target);
+    tourCurrentStep++;
+    setTimeout(renderTourStep, 100);
+    return;
+  }
+  
+  // Scroll al target si no está visible
+  const rect = target.getBoundingClientRect();
+  if(rect.top < 0 || rect.bottom > window.innerHeight) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => renderTourStepInternal(target, step), 400);
+  } else {
+    renderTourStepInternal(target, step);
+  }
+}
+
+function renderTourStepInternal(target, step) {
+  const rect = target.getBoundingClientRect();
+  const pad = 8;
+  
+  // Crear overlay oscuro con agujero (clip-path)
+  const overlay = document.createElement('div');
+  overlay.id = 'tourOverlay';
+  overlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    pointer-events: auto;
+    animation: tourFadeIn 0.3s ease-out;
+  `;
+  // Usamos clip-path para hacer el agujero (rectángulo invertido)
+  const top = rect.top - pad;
+  const left = rect.left - pad;
+  const right = rect.right + pad;
+  const bottom = rect.bottom + pad;
+  overlay.style.clipPath = `polygon(
+    0 0, 
+    100% 0, 
+    100% 100%, 
+    0 100%, 
+    0 ${top}px, 
+    ${left}px ${top}px, 
+    ${left}px ${bottom}px, 
+    ${right}px ${bottom}px, 
+    ${right}px ${top}px, 
+    0 ${top}px
+  )`;
+  document.body.appendChild(overlay);
+  tourSpotlightEl = overlay;
+  
+  // Borde resaltado alrededor del target
+  const highlight = document.createElement('div');
+  highlight.id = 'tourHighlight';
+  highlight.style.cssText = `
+    position: fixed;
+    top: ${top}px;
+    left: ${left}px;
+    width: ${rect.width + pad*2}px;
+    height: ${rect.height + pad*2}px;
+    border: 2px solid #0a84ff;
+    border-radius: 12px;
+    box-shadow: 0 0 0 4px rgba(10,132,255,0.3), 0 0 30px rgba(10,132,255,0.5);
+    pointer-events: none;
+    z-index: 9001;
+    animation: tourPulse 2s infinite, tourFadeIn 0.3s ease-out;
+  `;
+  document.body.appendChild(highlight);
+  
+  // Tooltip
+  const tooltip = document.createElement('div');
+  tooltip.id = 'tourTooltip';
+  tooltip.style.cssText = `
+    position: fixed;
+    z-index: 9002;
+    background: linear-gradient(180deg, #1c1c28, #0a0a0f);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 18px 20px;
+    max-width: 320px;
+    box-shadow: 0 16px 50px rgba(0,0,0,0.6);
+    color: #fff;
+    font-family: var(--font);
+    animation: tourSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  `;
+  tooltip.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-size:11px;color:#0a84ff;font-weight:600;letter-spacing:0.5px">PASO ${tourCurrentStep + 1} DE ${TOUR_STEPS.length}</div>
+      <button onclick="skipTour()" style="background:transparent;border:none;color:rgba(255,255,255,0.4);font-size:11px;cursor:pointer;font-family:inherit;padding:2px 6px">Saltar tour</button>
+    </div>
+    <h3 style="font-size:16px;font-weight:600;margin:0 0 8px;letter-spacing:-0.3px">${step.title}</h3>
+    <p style="margin:0 0 16px;color:rgba(255,255,255,0.7);font-size:13px;line-height:1.5">${step.desc}</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div style="display:flex;gap:4px">
+        ${TOUR_STEPS.map((_,i) => `<div style="width:${i===tourCurrentStep?'18':'6'}px;height:6px;border-radius:3px;background:${i===tourCurrentStep?'#0a84ff':'rgba(255,255,255,0.15)'};transition:width .3s"></div>`).join('')}
+      </div>
+      <div style="display:flex;gap:6px">
+        ${tourCurrentStep > 0 ? '<button onclick="prevTourStep()" style="padding:7px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:rgba(255,255,255,0.85);font-size:12px;cursor:pointer;font-family:inherit">Atrás</button>' : ''}
+        <button onclick="nextTourStep()" style="padding:7px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 3px 10px rgba(10,132,255,0.3)">${tourCurrentStep === TOUR_STEPS.length - 1 ? '¡Empezar! →' : 'Siguiente →'}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(tooltip);
+  tourTooltipEl = tooltip;
+  
+  // Posicionar tooltip al lado del target
+  setTimeout(() => {
+    const tooltipRect = tooltip.getBoundingClientRect();
+    let ttTop, ttLeft;
+    
+    const placement = step.placement || 'bottom';
+    const margin = 16;
+    
+    if(placement === 'right') {
+      ttLeft = rect.right + margin;
+      ttTop = rect.top + (rect.height / 2) - (tooltipRect.height / 2);
+    } else if(placement === 'left') {
+      ttLeft = rect.left - tooltipRect.width - margin;
+      ttTop = rect.top + (rect.height / 2) - (tooltipRect.height / 2);
+    } else if(placement === 'top') {
+      ttTop = rect.top - tooltipRect.height - margin;
+      ttLeft = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+    } else { // bottom
+      ttTop = rect.bottom + margin;
+      ttLeft = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+    }
+    
+    // Clamp dentro de la pantalla
+    ttLeft = Math.max(12, Math.min(window.innerWidth - tooltipRect.width - 12, ttLeft));
+    ttTop = Math.max(12, Math.min(window.innerHeight - tooltipRect.height - 12, ttTop));
+    
+    tooltip.style.left = ttLeft + 'px';
+    tooltip.style.top = ttTop + 'px';
+  }, 50);
+}
+
+function cleanupTour() {
+  document.getElementById('tourOverlay')?.remove();
+  document.getElementById('tourHighlight')?.remove();
+  document.getElementById('tourTooltip')?.remove();
+}
+
+function nextTourStep() {
+  tourCurrentStep++;
+  renderTourStep();
+}
+
+function prevTourStep() {
+  tourCurrentStep--;
+  if(tourCurrentStep < 0) tourCurrentStep = 0;
+  renderTourStep();
+}
+
+function skipTour() {
+  localStorage.setItem('tour_done', '1');
+  cleanupTour();
+}
+
+function finishTour() {
+  cleanupTour();
+  localStorage.setItem('tour_done', '1');
+  
+  // Modal de cierre con CTA
+  const final = document.createElement('div');
+  final.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:20px;animation:tourFadeIn 0.3s';
+  final.innerHTML = `
+    <div style="background:linear-gradient(180deg,#1c1c28,#0a0a0f);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 28px;max-width:380px;width:100%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.6);animation:tourSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)">
+      <div style="font-size:54px;margin-bottom:10px">🥁</div>
+      <h2 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#fff;letter-spacing:-0.3px">¡Listo para empezar!</h2>
+      <p style="margin:0 0 20px;color:rgba(255,255,255,0.65);font-size:14px;line-height:1.5">Ya conocés todo lo importante. Cuando quieras volver a ver el tour, lo encontrás en el menú ?</p>
+      <button onclick="this.closest('div').parentElement.remove()" style="padding:12px 28px;border-radius:12px;border:none;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(10,132,255,0.4)">Activar cámara y empezar →</button>
+    </div>
+  `;
+  document.body.appendChild(final);
+}
+
+// Recalcular posición si el usuario hace scroll o resize
+window.addEventListener('resize', () => { if(tourTooltipEl) renderTourStep(); });
+
+// Inyectar animaciones CSS
+(function injectTourCSS() {
+  if(document.getElementById('tourCSS')) return;
+  const style = document.createElement('style');
+  style.id = 'tourCSS';
+  style.textContent = `
+    @keyframes tourFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes tourSlideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes tourPulse {
+      0%, 100% { box-shadow: 0 0 0 4px rgba(10,132,255,0.3), 0 0 30px rgba(10,132,255,0.5); }
+      50% { box-shadow: 0 0 0 8px rgba(10,132,255,0.15), 0 0 40px rgba(10,132,255,0.7); }
+    }
+    /* En mobile, el tooltip ocupa casi toda la pantalla abajo */
+    @media (max-width: 640px) {
+      #tourTooltip {
+        max-width: calc(100vw - 24px) !important;
+        left: 12px !important;
+        right: 12px !important;
+        bottom: 12px !important;
+        top: auto !important;
+        width: auto !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+})();
+
+
+// ═══════════════════════════════════════════════════════════════
 //  POLISH UX: Metrónomo visual + bounce captura + click sutil
 // ═══════════════════════════════════════════════════════════════
 
@@ -1116,7 +1398,7 @@ function pulseMetronome(beatIdx, isStrong) {
   if(!dot || !beatLabel) return;
   
   // Mostrar número del beat (1-4 en 4/4)
-  const beatsPerMeasure = state?.compas === '3/4' ? 3 : (state?.compas === '2/4' ? 2 : 4);
+  const beatsPerMeasure = state?.compas === '3/4' ? 3 : (state?.compas === '2/4' ? 2 : (state?.compas === '6/8' ? 2 : 4));
   const beatNum = (beatIdx % beatsPerMeasure) + 1;
   beatLabel.textContent = beatNum;
   
@@ -1286,7 +1568,7 @@ function spawnCaptureParticles() {
       // Solo pulsa en beats fuertes (cada 2 subdivisiones = 1 tiempo)
       if(totalBeats % 2 === 0) {
         const beatInMeasure = totalBeats / 2;
-        const beatsPerMeasure = state.compas === '3/4' ? 3 : (state.compas === '2/4' ? 2 : 4);
+        const beatsPerMeasure = state.compas === '3/4' ? 3 : (state.compas === '2/4' ? 2 : (state.compas === '6/8' ? 2 : 4));
         const isStrong = (beatInMeasure % beatsPerMeasure) === 0;
         pulseMetronome(beatInMeasure, isStrong);
       }
@@ -1522,7 +1804,12 @@ function showOnboarding() {
     `;
     modal.querySelector('#obNext').onclick = () => {
       if(currentStep < steps.length - 1) { currentStep++; render(); }
-      else { localStorage.setItem('onboarding_done', '1'); modal.remove(); }
+      else { 
+        localStorage.setItem('onboarding_done', '1'); 
+        modal.remove();
+        // Lanzar el product tour automáticamente después del onboarding
+        setTimeout(() => { try { startProductTour(); } catch(e){ console.warn('tour:', e); } }, 500);
+      }
     };
     modal.querySelector('#obBack')?.addEventListener('click', () => { currentStep--; render(); });
     modal.querySelector('#obSkip')?.addEventListener('click', () => { localStorage.setItem('onboarding_done', '1'); modal.remove(); });
@@ -1962,6 +2249,7 @@ function showTutorialMenu() {
   modal.style.cssText = 'position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s';
 
   const items = [
+    {id:'__tour',  icon:'🗺️', title:'Tour completo (paso a paso)'},
     {id:'gesture', icon:'✋', title:'Captura por gesto'},
     {id:'voice',   icon:'🎙', title:'Captura por voz'},
     {id:'insert',  icon:'➕', title:'Insertar compás'},
@@ -1983,7 +2271,7 @@ function showTutorialMenu() {
       </div>
       <div style="padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
         ${items.map(item => `
-          <button onclick="document.getElementById('tutorialMenuModal').remove();showTutorial('${item.id}')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;text-align:left;transition:all .15s" onmouseover="this.style.background='rgba(10,132,255,0.12)';this.style.borderColor='rgba(10,132,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.08)'">
+          <button onclick="document.getElementById('tutorialMenuModal').remove();${item.id === '__tour' ? `localStorage.removeItem('tour_done');startProductTour()` : `showTutorial('${item.id}')`}" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;text-align:left;transition:all .15s" onmouseover="this.style.background='rgba(10,132,255,0.12)';this.style.borderColor='rgba(10,132,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.08)'">
             <span style="font-size:22px;flex-shrink:0">${item.icon}</span>
             <span>${item.title}</span>
           </button>
@@ -2368,7 +2656,7 @@ function fingerConfidence(landmarks) {
 //    (lectura espejo: meñique izq = tiempo más "cercano al centro" = 2)
 // ═══════════════════════════════════════════════════════════════
 function fingerMaskToPattern(rightMask, leftMask, rightFist, leftFist, compas='4/4', subdiv='2') {
-  const beatsMap = {'4/4':8, '2/4':4, '3/4':6};
+  const beatsMap = {'4/4':8, '2/4':4, '3/4':6, '6/8':6, '3/3':9};
   const beats = beatsMap[compas] || 8;
   const pattern = Array(beats).fill(false);
 
@@ -2400,15 +2688,61 @@ function fingerMaskToPattern(rightMask, leftMask, rightFist, leftFist, compas='4
       if(leftMask[2]) pattern[3] = true;
     }
   } else if(compas === '3/4') {
-    // Derecha → slots 0-3 (1, 1y, 2, 2y), Izquierda → slots 4-5 (3, 3y)
+    // Derecha → slots 0,1,2 (1, 1y, 2), Izquierda → slots 3,4,5 (2y, 3, 3y)
+    if(!rightFist) {
+      if(rightMask[0]) pattern[0] = true; // índice → 1
+      if(rightMask[1]) pattern[1] = true; // medio → 1y
+      if(rightMask[2]) pattern[2] = true; // anular → 2
+    }
+    if(!leftFist) {
+      if(leftMask[3]) pattern[3] = true; // meñique → 2y
+      if(leftMask[2]) pattern[4] = true; // anular → 3
+      if(leftMask[1]) pattern[5] = true; // medio → 3y
+    }
+  } else if(compas === '6/8') {
+    // 6/8 = 2 tiempos ternarios: (1-2-3) (4-5-6)
+    // Derecha → primer tiempo ternario: slots 0,1,2 (índice, medio, anular)
+    // Izquierda → segundo tiempo ternario: slots 3,4,5 (meñique, anular, medio)
     if(!rightFist) {
       if(rightMask[0]) pattern[0] = true;
       if(rightMask[1]) pattern[1] = true;
       if(rightMask[2]) pattern[2] = true;
     }
     if(!leftFist) {
-      if(leftMask[3]) pattern[4] = true;
-      if(leftMask[2]) pattern[5] = true;
+      if(leftMask[3]) pattern[3] = true;
+      if(leftMask[2]) pattern[4] = true;
+      if(leftMask[1]) pattern[5] = true;
+    }
+  } else if(compas === '3/3') {
+    // 3/3 = 3 grupos de 3 notas (9 slots total), captura en 3 pasos
+    // Paso 1 (mano DER): slots 0,1,2
+    // Paso 2 (mano IZQ): slots 3,4,5
+    // Paso 3 (mano DER otra vez): slots 6,7,8
+    // El livePattern usa el step actual y combina con lo ya capturado en steps anteriores
+    const step = state.threeThreeStep || 0; // 0, 1, 2
+    const accumulated = state.threeThreeAccum || Array(9).fill(false);
+    
+    // Mostrar lo ya capturado
+    for(let i = 0; i < 9; i++) {
+      if(accumulated[i]) pattern[i] = true;
+    }
+    
+    // Agregar lo del step actual (live)
+    if(step === 0 && !rightFist) {
+      // Mano DER → slots 0,1,2
+      if(rightMask[0]) pattern[0] = true;
+      if(rightMask[1]) pattern[1] = true;
+      if(rightMask[2]) pattern[2] = true;
+    } else if(step === 1 && !leftFist) {
+      // Mano IZQ → slots 3,4,5
+      if(leftMask[3]) pattern[3] = true;
+      if(leftMask[2]) pattern[4] = true;
+      if(leftMask[1]) pattern[5] = true;
+    } else if(step === 2 && !rightFist) {
+      // Mano DER otra vez → slots 6,7,8
+      if(rightMask[0]) pattern[6] = true;
+      if(rightMask[1]) pattern[7] = true;
+      if(rightMask[2]) pattern[8] = true;
     }
   }
 
@@ -3239,9 +3573,13 @@ async function playScore() {
     const beatDur = 60/state.bpm/2;
     const ctx = state.audioCtx;
     const startTime = ctx.currentTime + 0.05;
+    
+    // Beats por compás según métrica actual
+    const beatsMap = {'4/4':8, '2/4':4, '3/4':6, '6/8':6, '3/3':9};
+    const beatsPerMeasure = beatsMap[state.compas] || 8;
 
     for(let mi=0; mi<maxLen; mi++) {
-      const mStart = startTime + mi*8*beatDur;
+      const mStart = startTime + mi*beatsPerMeasure*beatDur;
       INSTRUMENTS.forEach(inst => {
         if(muteState[inst.id]) return;
         const track = state.tracks[inst.id]||[];
@@ -3251,11 +3589,14 @@ async function playScore() {
         }
         if(!pat) return;
         pat.forEach((v,bi)=>{
-          if(v) playInstrument(inst.id, mStart+bi*beatDur, bi===0||bi===4?1.0:0.82);
+          // Acentos según métrica: en 4/4 los tiempos fuertes son 0 y 4, en 3/4 y 6/8 son 0 y la mitad
+          const halfPoint = Math.floor(beatsPerMeasure/2);
+          const isStrong = bi === 0 || bi === halfPoint;
+          if(v) playInstrument(inst.id, mStart+bi*beatDur, isStrong ? 1.0 : 0.82);
         });
       });
       // Animación visual
-      for(let bi=0;bi<8;bi++){
+      for(let bi=0; bi<beatsPerMeasure; bi++){
         const ms=(mStart+bi*beatDur-ctx.currentTime)*1000;
         setTimeout(()=>{
           if(state.stopRequested) return;
@@ -3271,7 +3612,7 @@ async function playScore() {
     }
 
     // Repetir solo si hay algún instrumento con loop activo
-    const cycleDur = maxLen*8*(60/state.bpm/2)*1000;
+    const cycleDur = maxLen*beatsPerMeasure*(60/state.bpm/2)*1000;
     const anyLoop = INSTRUMENTS.some(i=>loopState[i.id]);
     if(anyLoop && !state.stopRequested) setTimeout(scheduleLoop, cycleDur);
     else setTimeout(()=>{
@@ -3408,7 +3749,55 @@ function updateStaff() {
   redrawFullScore();
 }
 
-function setCompas(v) { state.compas=v; updateStaff(); }
+// Helper para activar visualmente un botón de control segmentado
+function segActive(containerId, btn) {
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  container.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+}
+
+function setCompas(v) { 
+  const beatsMap = {'4/4':8, '2/4':4, '3/4':6, '6/8':6, '3/3':9};
+  const oldCompas = state.compas;
+  const oldBeats = beatsMap[oldCompas] || 8;
+  const newBeats = beatsMap[v] || 8;
+  
+  state.compas = v;
+  state.timeSig = v;
+  
+  // Resetear step de 3/3 al cambiar de métrica
+  state.threeThreeStep = 0;
+  state.threeThreeAccum = Array(9).fill(false);
+  
+  // Convertir compases ya guardados al nuevo tamaño
+  if(oldBeats !== newBeats) {
+    for(const instrId in state.tracks) {
+      state.tracks[instrId] = (state.tracks[instrId] || []).map(m => {
+        if(!m.pattern) return m;
+        const oldPat = m.pattern;
+        const newPat = Array(newBeats).fill(false);
+        for(let i = 0; i < newBeats; i++) {
+          const srcIdx = Math.floor(i * oldBeats / newBeats);
+          if(oldPat[srcIdx]) newPat[i] = true;
+        }
+        return {...m, pattern: newPat, compas: v};
+      });
+    }
+  }
+  
+  // Re-render todo
+  try { updateStaff(); } catch(e) { console.warn('updateStaff:', e); }
+  try { if(typeof renderTrackThumbs === 'function') renderTrackThumbs(); } catch(e) { console.warn('renderTrackThumbs:', e); }
+  
+  // Asegurarse de actualizar UI visual del botón
+  const container = document.getElementById('segCompas');
+  if(container) {
+    container.querySelectorAll('.seg-btn').forEach(b => {
+      b.classList.toggle('active', b.textContent.trim() === v);
+    });
+  }
+}
 function setSubdiv(v) { state.subdiv=v; updateStaff(); }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3426,6 +3815,86 @@ function maxTrackLen() {
 // ═══════════════════════════════════════════════════════════════
 function captureCurrentPattern(insertAfter = -1) {
   if(isInstrumentLocked(activeInstrId)) { showPaywall('instrument'); return; }
+  
+  // ─── Lógica especial 3/3: captura en 3 pasos ───
+  if(state.compas === '3/3') {
+    if(!state.threeThreeAccum) state.threeThreeAccum = Array(9).fill(false);
+    if(state.threeThreeStep == null) state.threeThreeStep = 0;
+    
+    const step = state.threeThreeStep;
+    const accum = state.threeThreeAccum;
+    
+    // Aplicar la captura del step actual al acumulador
+    if(step === 0 && !state.rightFist) {
+      if(state.rightMask[0]) accum[0] = true;
+      if(state.rightMask[1]) accum[1] = true;
+      if(state.rightMask[2]) accum[2] = true;
+    } else if(step === 1 && !state.leftFist) {
+      if(state.leftMask[3]) accum[3] = true;
+      if(state.leftMask[2]) accum[4] = true;
+      if(state.leftMask[1]) accum[5] = true;
+    } else if(step === 2 && !state.rightFist) {
+      if(state.rightMask[0]) accum[6] = true;
+      if(state.rightMask[1]) accum[7] = true;
+      if(state.rightMask[2]) accum[8] = true;
+    }
+    
+    // Audio feedback del step
+    initAudio();
+    if(state.audioCtx.state === 'suspended') state.audioCtx.resume();
+    playConga(state.audioCtx.currentTime + 0.02, 1.0);
+    
+    // Flash más sutil para los pasos intermedios
+    const flash = document.createElement('div');
+    flash.className = 'flash';
+    if(step < 2) flash.style.opacity = '0.4';
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 350);
+    
+    // Avanzar step o completar
+    if(step < 2) {
+      state.threeThreeStep = step + 1;
+      // Mostrar notificación del próximo paso
+      if(typeof notify === 'function') {
+        const nextHand = state.threeThreeStep === 1 ? 'IZQUIERDA' : 'DERECHA otra vez';
+        notify(`Paso ${state.threeThreeStep + 1}/3 — mano ${nextHand}`, 'info', 2000);
+      }
+      // Actualizar pentagrama para mostrar lo acumulado
+      try { updateStaff(); } catch(e){}
+      return;
+    }
+    
+    // Step 2 completado → guardamos el compás de 9 slots completo
+    if(!canAddMeasure()) { showPaywall('measures'); return; }
+    
+    const measure = {
+      pattern: [...accum],
+      rightMask:[...state.rightMask], leftMask:[...state.leftMask],
+      rightFist:state.rightFist, leftFist:state.leftFist,
+      compas: '3/3'
+    };
+    
+    const track = state.tracks[activeInstrId] || (state.tracks[activeInstrId] = []);
+    const ia = state.pendingInsertAfter >= 0 ? state.pendingInsertAfter : (insertAfter === -2 ? -1 : insertAfter);
+    state.pendingInsertAfter = -1;
+    
+    if(ia >= 0 && ia < track.length) {
+      track.splice(ia + 1, 0, measure);
+    } else {
+      track.push(measure);
+    }
+    
+    // Reset para próximo compás
+    state.threeThreeStep = 0;
+    state.threeThreeAccum = Array(9).fill(false);
+    
+    if(typeof notify === 'function') notify('Compás 3/3 completado ✓', 'success', 2000);
+    
+    rebuildScoreDisplay();
+    return;
+  }
+  
+  // ─── Captura normal (4/4, 2/4, 3/4, 6/8) ───
   if(!canAddMeasure()) { showPaywall('measures'); return; }
   const pattern = fingerMaskToPattern(
     state.rightMask, state.leftMask,
@@ -3620,6 +4089,7 @@ function drawMultiTrackScore(canvas, tracks, livePat, compas, hlInfo={instrId:nu
     '4/4':{ D:[0,1,2,3], I:[4,5,6,7] },
     '2/4':{ D:[0,1],     I:[2,3] },
     '3/4':{ D:[0,1,2],   I:[3,4,5] },
+    '6/8':{ D:[0,1,2],   I:[3,4,5] },
   };
 
   activeInstrs.forEach((inst, ii) => {
