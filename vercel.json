@@ -3,19 +3,13 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "rewrites": [
-    {
-      "source": "/app",
-      "destination": "/app/index.html"
-    }
+    { "source": "/app", "destination": "/app/index.html" }
   ],
   "headers": [
     {
-      "source": "/app/(.*)",
+      "source": "/(.*)",
       "headers": [
-        {
-          "key": "Permissions-Policy",
-          "value": "camera=(self), microphone=(self)"
-        }
+        { "key": "Permissions-Policy", "value": "camera=(self), microphone=(self)" }
       ]
     }
   ]

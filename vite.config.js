@@ -1,20 +1,20 @@
 import { defineConfig } from 'vite';
-import { copyFileSync, mkdirSync, existsSync } from 'fs';
+import { copyFileSync, mkdirSync } from 'fs';
 
-// Plugin para copiar archivos raíz al dist después del build
 function copyRootFiles() {
   return {
     name: 'copy-root-files',
     closeBundle() {
-      const files = [
-        ['index.html',       'dist/index.html'],
-        ['manifest.json',    'dist/manifest.json'],
-        ['sw.js',            'dist/sw.js'],
-        ['privacidad.html',  'dist/privacidad.html'],
-        ['terminos.html',    'dist/terminos.html'],
-        ['_redirects',       'dist/_redirects'],
+      // Copiar archivos de la raíz del repo a dist/
+      const rootFiles = [
+        ['index.html',      'dist/index.html'],
+        ['manifest.json',   'dist/manifest.json'],
+        ['sw.js',           'dist/sw.js'],
+        ['privacidad.html', 'dist/privacidad.html'],
+        ['terminos.html',   'dist/terminos.html'],
+        ['_redirects',      'dist/_redirects'],
       ];
-      for (const [src, dst] of files) {
+      for (const [src, dst] of rootFiles) {
         try { copyFileSync(src, dst); } catch(e) {}
       }
     }
@@ -30,7 +30,5 @@ export default defineConfig({
     emptyOutDir: true,
   },
   plugins: [copyRootFiles()],
-  server: {
-    port: 3000,
-  },
+  server: { port: 3000 },
 });
