@@ -16,848 +16,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&family=SF+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<style>
-:root {
-  --bg:        #000000;
-  --bg1:       #1c1c1e;
-  --bg2:       #2c2c2e;
-  --bg3:       #3a3a3c;
-  --separator: rgba(255,255,255,0.08);
-  --label1:    #ffffff;
-  --label2:    rgba(255,255,255,0.6);
-  --label3:    rgba(255,255,255,0.3);
-  --label4:    rgba(255,255,255,0.18);
-  --blue:      #0a84ff;
-  --green:     #30d158;
-  --orange:    #ff9f0a;
-  --red:       #ff453a;
-  --purple:    #bf5af2;
-  --teal:      #5ac8fa;
-  --yellow:    #ffd60a;
-  --pink:      #ff375f;
-  --fill1:     rgba(255,255,255,0.12);
-  --fill2:     rgba(255,255,255,0.08);
-  --fill3:     rgba(255,255,255,0.05);
-  --radius:    12px;
-  --radius-sm: 8px;
-  --font:      -apple-system, 'SF Pro Display', BlinkMacSystemFont, sans-serif;
-  --mono:      'SF Mono', ui-monospace, monospace;
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  background: var(--bg);
-  color: var(--label1);
-  font-family: var(--font);
-  min-height: 100vh;
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* ── HEADER ── */
-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px 14px;
-  border-bottom: 1px solid var(--separator);
-  backdrop-filter: blur(20px);
-  background: rgba(28,28,30,0.8);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.logo-icon {
-  width: 32px; height: 32px;
-  background: var(--blue);
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
-}
-.logo-text {
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.3px;
-}
-.logo-sub {
-  font-size: 11px;
-  color: var(--label3);
-  font-weight: 400;
-  letter-spacing: 0.2px;
-}
-
-.hstatus {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--label3);
-  font-family: var(--mono);
-}
-.sdot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--label4);
-  transition: background .3s, box-shadow .3s;
-}
-.sdot.on {
-  background: var(--green);
-  box-shadow: 0 0 6px var(--green);
-}
-
-/* ── LAYOUT ── */
-.app {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  height: calc(100vh - 57px);
-}
-
-/* ── SIDEBAR ── */
-.sidebar {
-  border-right: 1px solid var(--separator);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--bg1);
-}
-
-.cam-section {
-  position: relative;
-  background: #000;
-  aspect-ratio: 4/3;
-  flex-shrink: 0;
-}
-#videoEl {
-  width: 100%; height: 100%;
-  object-fit: cover;
-  transform: scaleX(-1);
-  display: block;
-}
-#overlayCanvas {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  transform: scaleX(-1);
-  pointer-events: none;
-}
-
-/* Camera overlay */
-.cam-overlay {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 8px;
-  padding: 16px;
-  background: rgba(0,0,0,0.85);
-  backdrop-filter: blur(10px);
-  transition: opacity .4s;
-  overflow-y: auto;
-}
-.cam-overlay.hidden { opacity: 0; pointer-events: none; }
-
-.btn-cam {
-  background: var(--blue);
-  color: #fff;
-  border: none;
-  border-radius: 980px;
-  padding: 10px 24px;
-  font-family: var(--font);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: opacity .15s, transform .15s;
-}
-.btn-cam:hover { opacity: 0.85; }
-.btn-cam:active { transform: scale(0.97); }
-.cam-hint {
-  font-size: 12px;
-  color: rgba(255,255,255,0.45);
-  text-align: center;
-  line-height: 1.5;
-}
-
-/* Hand badge */
-.hand-badge {
-  position: absolute;
-  bottom: 10px; left: 10px; right: 10px;
-  background: rgba(28,28,30,0.85);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--separator);
-  border-radius: var(--radius-sm);
-  padding: 7px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-family: var(--mono);
-  font-size: 12px;
-}
-.hb-note { color: var(--blue); font-weight: 500; }
-
-/* ── FINGER DISPLAY ── */
-.finger-section {
-  padding: 16px;
-  border-bottom: 1px solid var(--separator);
-  flex-shrink: 0;
-}
-.section-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--label3);
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  margin-bottom: 12px;
-}
-.fingers-row {
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-  justify-content: center;
-  height: 80px;
-}
-.finger { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.finger-shape {
-  width: 18px;
-  border-radius: 9px 9px 3px 3px;
-  background: var(--fill2);
-  border: 1px solid var(--separator);
-  transition: height .18s cubic-bezier(.34,1.56,.64,1), background .18s;
-}
-.finger-shape.up { background: var(--blue); border-color: var(--blue); }
-.finger-label {
-  font-size: 8px;
-  color: var(--label3);
-  font-family: var(--mono);
-  letter-spacing: 0.3px;
-}
-.finger-shape.up + .finger-label { color: var(--blue); }
-
-/* ── INSTRUMENT SELECTOR ── */
-.instr-section {
-  padding: 14px 16px;
-  flex: 1;
-  overflow-y: auto;
-}
-.instr-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  row-gap: 8px;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-.instr-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 6px;
-  border-radius: var(--radius-sm);
-  border: 1.5px solid transparent;
-  background: var(--fill2);
-  cursor: pointer;
-  transition: all .15s;
-  color: var(--label1);
-  font-family: var(--font);
-  position: relative;
-}
-.instr-btn:active { transform: scale(0.95); }
-.instr-btn { min-height: 78px; }
-.instr-btn.active {
-  background: var(--fill1);
-  border-color: var(--i-color);
-  box-shadow: 0 0 0 1px var(--i-color)20;
-}
-.instr-emoji { font-size: 22px; }
-.instr-name {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--label2);
-  letter-spacing: 0.2px;
-}
-.instr-btn.active .instr-name { color: var(--i-color); }
-
-/* ── Slider vertical delicado tipo Apple ── */
-.vol-slider-vertical {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 3px;
-  height: 48px;
-  background: rgba(255,255,255,0.06);
-  border-radius: 2px;
-  outline: none;
-  cursor: pointer;
-  margin: 0;
-  writing-mode: vertical-lr;
-  direction: rtl;
-  position: relative;
-  transition: background .15s, width .15s;
-}
-.vol-slider-vertical:hover {
-  background: rgba(255,255,255,0.12);
-  width: 4px;
-}
-/* Thumb circular pequeño */
-.vol-slider-vertical::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--track-color, #fff);
-  border: 1.5px solid rgba(255,255,255,0.9);
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-  transition: transform .15s, box-shadow .15s;
-}
-.vol-slider-vertical::-webkit-slider-thumb:hover {
-  transform: scale(1.25);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-}
-.vol-slider-vertical::-webkit-slider-thumb:active {
-  transform: scale(1.4);
-}
-.vol-slider-vertical::-moz-range-thumb {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--track-color, #fff);
-  border: 1.5px solid rgba(255,255,255,0.9);
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-}
-.vol-slider-vertical::-moz-range-track {
-  background: rgba(255,255,255,0.06);
-  width: 3px;
-  border-radius: 2px;
-}
-.mute-dot {
-  position: absolute;
-  top: 5px; right: 5px;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: transparent;
-  transition: background .15s;
-}
-.mute-dot.muted { background: var(--red); }
-.loop-dot {
-  position: absolute;
-  top: 5px; left: 5px;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: transparent;
-  transition: background .15s;
-}
-.loop-dot.active { background: var(--green); }
-
-/* Controls row under instruments */
-.instr-controls {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.ctrl-chip {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
-  border-radius: 980px;
-  border: 1px solid var(--separator);
-  background: var(--fill2);
-  font-size: 11px;
-  color: var(--label2);
-  cursor: pointer;
-  transition: all .15s;
-  font-family: var(--font);
-  white-space: nowrap;
-}
-.ctrl-chip:hover { background: var(--fill1); }
-.ctrl-chip:active { transform: scale(0.96); }
-.ctrl-chip.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-.ctrl-chip.danger:hover { background: var(--red); color: #fff; border-color: var(--red); }
-
-/* ── MAIN CONTENT ── */
-.main-content {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--bg);
-}
-
-/* ── TOOLBAR ── */
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--separator);
-  flex-wrap: wrap;
-  background: var(--bg1);
-}
-
-.seg-control {
-  display: flex;
-  background: var(--fill2);
-  border-radius: var(--radius-sm);
-  padding: 2px;
-  gap: 1px;
-}
-.seg-btn {
-  padding: 5px 12px;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  color: var(--label2);
-  font-family: var(--font);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all .15s;
-}
-.seg-btn.active {
-  background: var(--bg3);
-  color: var(--label1);
-}
-
-.tb-select {
-  background: var(--fill2);
-  border: 1px solid var(--separator);
-  border-radius: var(--radius-sm);
-  color: var(--label1);
-  font-family: var(--font);
-  font-size: 12px;
-  padding: 5px 10px;
-  cursor: pointer;
-  -webkit-appearance: none;
-}
-
-.bpm-pill {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--fill2);
-  border: 1px solid var(--separator);
-  border-radius: var(--radius-sm);
-  padding: 4px 8px;
-}
-.bpm-num {
-  font-family: var(--mono);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--orange);
-  min-width: 32px;
-  text-align: center;
-}
-.bpm-step {
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  border: none;
-  background: var(--fill2);
-  color: var(--label1);
-  font-size: 14px;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: background .12s;
-}
-.bpm-step:hover { background: var(--fill1); }
-input[type=range].bpm-slider {
-  width: 80px;
-  -webkit-appearance: none;
-  height: 2px;
-  background: var(--blue);
-  border-radius: 1px;
-  outline: none;
-  cursor: pointer;
-}
-input[type=range].bpm-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 14px; height: 14px;
-  border-radius: 50%;
-  background: #fff;
-  cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
-}
-.bpm-presets { display: flex; gap: 3px; }
-.bpm-preset {
-  padding: 3px 6px;
-  border-radius: 4px;
-  border: none;
-  background: var(--fill2);
-  color: var(--label3);
-  font-family: var(--mono);
-  font-size: 10px;
-  cursor: pointer;
-  transition: all .12s;
-}
-.bpm-preset:hover { background: var(--fill1); color: var(--label1); }
-.bpm-preset.active { background: var(--orange); color: #000; }
-
-.tb-spacer { flex: 1; }
-
-/* Toolbar groups */
-.tb-group {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-.tb-divider {
-  width: 1px;
-  height: 20px;
-  background: rgba(255,255,255,0.1);
-  margin: 0 4px;
-}
-
-/* Help button (?) */
-.ctrl-chip.help-btn {
-  min-width: 28px;
-  padding: 6px 9px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #0a84ff;
-  border-color: rgba(10,132,255,0.3);
-  background: rgba(10,132,255,0.08);
-}
-.ctrl-chip.help-btn:hover {
-  background: rgba(10,132,255,0.18);
-  border-color: rgba(10,132,255,0.5);
-}
-
-/* Insert banner */
-.insert-banner {
-  display: none;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: rgba(10,132,255,0.1);
-  border-bottom: 1px solid rgba(10,132,255,0.2);
-  font-size: 12px;
-  color: var(--blue);
-}
-
-/* ── SCORE AREA ── */
-.score-wrap {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px 20px 0;
-}
-.score-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--label3);
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  margin-bottom: 10px;
-}
-#staffCanvas {
-  width: 100%;
-  display: block;
-  border-radius: var(--radius);
-  background: #111;
-}
-
-/* ── TRACKS / HISTORY ── */
-.tracks-section {
-  border-top: 1px solid var(--separator);
-  background: var(--bg1);
-  padding: 12px 20px;
-  flex-shrink: 0;
-  max-height: 180px;
-  overflow-y: auto;
-}
-.tracks-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--label3);
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-#historyScroll {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-/* Track rows */
-.measure-thumb {
-  flex-shrink: 0;
-  background: var(--fill2);
-  border: 1px solid var(--separator);
-  border-radius: var(--radius-sm);
-  padding: 7px 10px;
-  cursor: pointer;
-  transition: all .15s;
-  min-width: 90px;
-  text-align: center;
-}
-.measure-thumb:hover { background: var(--fill1); }
-.measure-thumb.active {
-  border-color: var(--blue);
-  background: rgba(10,132,255,0.1);
-}
-.measure-thumb.drag-over-left { border-left: 2px solid var(--blue); }
-.measure-thumb.drag-over-right { border-right: 2px solid var(--blue); }
-.mt-number {
-  font-size: 9px;
-  font-family: var(--mono);
-  color: var(--label3);
-  margin-bottom: 3px;
-}
-.mt-pattern { font-size: 10px; color: var(--label2); }
-.thumb-btn {
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid var(--separator);
-  background: transparent;
-  color: var(--label2);
-  font-size: 10px;
-  cursor: pointer;
-  transition: all .12s;
-  font-family: var(--font);
-}
-.thumb-btn:hover { background: var(--fill1); color: var(--label1); }
-.thumb-btn.danger:hover { background: var(--red); color: #fff; border-color: var(--red); }
-
-/* ── INFO STRIP ── */
-.info-strip {
-  display: flex;
-  gap: 20px;
-  padding: 8px 20px;
-  border-top: 1px solid var(--separator);
-  background: var(--bg1);
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--label3);
-  flex-shrink: 0;
-}
-.info-strip span { color: var(--label2); font-weight: 500; }
-
-/* ── FLASH ── */
-.flash {
-  position: fixed; inset: 0;
-  background: rgba(10,132,255,0.12);
-  pointer-events: none;
-  z-index: 999;
-  animation: flash .3s ease-out forwards;
-}
-@keyframes flash { from{opacity:1} to{opacity:0} }
-
-/* ── SCROLLBARS ── */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--fill1); border-radius: 2px; }
-
-/* ── RESPONSIVE ── */
-/* ─── MOBILE TABLET (1024px) ─── */
-@media (max-width: 1024px) {
-  .toolbar {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    padding-bottom: 8px;
-  }
-  .tb-divider { display: none; }
-}
-
-/* ─── MOBILE (820px) ─── */
-@media (max-width: 820px) {
-  .app { 
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto 1fr;
-  }
-  .sidebar { 
-    border-right: none; 
-    border-bottom: 1px solid var(--separator);
-    max-height: 50vh;
-    overflow-y: auto;
-  }
-  .instr-grid { grid-template-columns: repeat(3, 1fr); }
-  
-  /* Cámara más grande en mobile */
-  .cam-section { aspect-ratio: 4/3; min-height: 240px; }
-  
-  /* Header compacto */
-  header {
-    padding: 8px 12px;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .logo-text { font-size: 14px; }
-  .logo-sub { font-size: 10px; }
-  .hstatus { font-size: 11px; }
-  
-  /* Botón instalar más chico */
-  #btnInstall { padding: 5px 10px !important; font-size: 11px !important; }
-}
-
-/* ─── MOBILE PEQUEÑO (640px) ─── */
-@media (max-width: 640px) {
-  body { font-size: 14px; }
-  
-  /* Header ultra compacto */
-  header { padding: 6px 10px; }
-  .logo-icon { width: 32px !important; height: 32px !important; }
-  .logo-text { font-size: 13px; }
-  .logo-sub { display: none; } /* ocultar subtítulo */
-  
-  /* Status: ocultar FPS, dejar solo dot + plan */
-  .hstatus #fpstxt, .hstatus #stxt { display: none; }
-  .hstatus > span:not(#planBadge):not(#fpstxt):not(#stxt) { display: none; }
-  
-  /* App grid */
-  .app { padding: 8px; gap: 8px; }
-  
-  /* Sidebar más compacta */
-  .sidebar {
-    padding: 8px;
-    max-height: 42vh;
-  }
-  
-  /* Cámara mejor visible */
-  .cam-section { aspect-ratio: 4/3; min-height: 220px; }
-  
-  /* Instrumentos: grid 3 columnas */
-  .instr-grid { 
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-  }
-  .instr-btn {
-    min-height: 70px !important;
-    padding: 6px 4px !important;
-  }
-  .instr-btn .instr-name { font-size: 9px !important; }
-  [data-icon-slot] {
-    width: 38px !important;
-    height: 50px !important;
-  }
-  
-  /* Toolbar: scroll horizontal */
-  .toolbar {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    padding: 6px 4px 10px;
-    scroll-snap-type: x mandatory;
-  }
-  .toolbar::-webkit-scrollbar { height: 3px; }
-  .toolbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
-  
-  .tb-spacer { display: none; }
-  .tb-group {
-    flex-shrink: 0;
-    scroll-snap-align: start;
-  }
-  .tb-divider { display: none; }
-  
-  .ctrl-chip {
-    padding: 8px 10px !important;
-    font-size: 12px !important;
-    white-space: nowrap;
-    flex-shrink: 0;
-    min-height: 36px;
-  }
-  .ctrl-chip.help-btn {
-    padding: 8px 11px !important;
-    min-width: 36px;
-  }
-  
-  /* Pentagrama */
-  .staff-wrap {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  #staffCanvas { 
-    min-width: 600px;
-    height: auto !important;
-  }
-  
-  /* Catálogo signs panel */
-  #signsPanel { 
-    padding: 12px !important;
-    max-height: 80vh !important;
-  }
-  
-  /* Modales tutoriales: ocupar pantalla casi entera */
-  #tutorialModal > div,
-  #tutorialMenuModal > div,
-  #onboardingModal > div,
-  #feedbackModal > div,
-  #shareModal > div {
-    max-height: 90vh;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-  }
-  
-  #tutStage {
-    height: 220px !important;
-  }
-  
-  /* Feedback button más chico en mobile */
-  #feedbackFloatBtn {
-    bottom: 10px !important;
-    right: 10px !important;
-    width: 30px !important;
-    height: 30px !important;
-    font-size: 13px !important;
-  }
-  
-  /* Metrónomo más chico */
-  #metronome {
-    top: 8px !important;
-    padding: 5px 10px !important;
-    font-size: 11px !important;
-  }
-  #metronome #metroBpm { display: none; }
-  
-  /* Panel de usuario */
-  #userPanelModal > div {
-    margin: 16px !important;
-    max-width: calc(100% - 32px) !important;
-  }
-  
-  /* Tracks/Pistas */
-  .track-row, .pista-row {
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  
-  /* BPM input */
-  .bpm-row, .bpm-controls {
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  
-  /* Cam overlay logo más chico en mobile */
-  .cam-overlay img {
-    width: 56px !important;
-    height: 56px !important;
-  }
-  .cam-overlay > div[style*="font-size:14px"] { font-size: 12px !important; }
-  .cam-hint { font-size: 10px !important; }
-  .btn-cam {
-    padding: 9px 18px !important;
-    font-size: 13px !important;
-  }
-}
-
-/* ─── MOBILE LANDSCAPE (height pequeño) ─── */
-@media (max-height: 500px) and (orientation: landscape) {
-  .sidebar { max-height: 100vh; }
-  .cam-section { aspect-ratio: 16/9; min-height: 180px; }
-  header { padding: 4px 10px; }
-  .logo-text { font-size: 12px; }
-  .logo-sub { display: none; }
-}
-</style>
+<link rel="stylesheet" href="/src/styles.css">
+  <script type="module" src="/src/main.js"></script>
 </head>
 <body>
 
@@ -892,12 +52,18 @@ input[type=range].bpm-slider::-webkit-slider-thumb {
         <div class="hb-fingers" id="hbFingers">·····</div>
         <div class="hb-note" id="hbNote">—</div>
       </div>
+      <!-- Botón desactivar cámara (visible solo cuando está activa) -->
+      <button class="btn-cam-stop" id="btnStopCam" onclick="stopCamera()" aria-label="Desactivar cámara">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Desactivar
+      </button>
+
       <div class="cam-overlay" id="camOvl">
         <img src="/assets/logo.png" alt="PercuSignal" style="width:72px;height:72px;border-radius:14px;box-shadow:0 6px 20px rgba(10,132,255,0.3)"/>
         <div style="font-size:14px;font-weight:600;color:#fff;margin-top:2px">PercuSignal</div>
         <div class="cam-hint" style="font-size:11px">Mostrá tu mano a la cámara<br>para generar ritmos</div>
         <button class="btn-cam" id="btnStart" style="margin-top:4px">Activar cámara</button>
-        <button onclick="showTutorial('gesture')" style="background:transparent;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);padding:5px 12px;border-radius:980px;font-size:11px;cursor:pointer;font-family:inherit">? ¿Cómo funciona?</button>
+        <button onclick="showTutorial('gesture')" style="background:transparent;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);padding:5px 12px;border-radius:980px;font-size:11px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ¿Cómo funciona?</button>
         <div class="cam-hint" style="font-size:10px;margin-top:auto">Requiere permiso de cámara</div>
       </div>
     </div>
@@ -956,34 +122,34 @@ input[type=range].bpm-slider::-webkit-slider-thumb {
       <!-- Grupo: Captura -->
       <div class="tb-group">
         <button class="ctrl-chip help-btn" onclick="showTutorial('voice')" title="Cómo usar voz">?</button>
-        <button class="ctrl-chip" id="btnVoice" onclick="toggleVoice()">🎙 Voz</button>
-        <button class="ctrl-chip" id="btnCapture" onclick="captureCurrentPattern()">⊕ Capturar</button>
+        <button class="ctrl-chip" id="btnVoice" onclick="toggleVoice()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg> Voz</button>
+        <button class="ctrl-chip" id="btnCapture" onclick="captureCurrentPattern()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Capturar</button>
       </div>
 
       <div class="tb-divider"></div>
 
       <!-- Grupo: Reproducción -->
       <div class="tb-group">
-        <button class="ctrl-chip" id="btnPlay" onclick="playScore()" style="background:var(--green);color:#000;border-color:var(--green)">▶ Tocar</button>
-        <button class="ctrl-chip" id="btnStop" onclick="stopScore()" style="display:none;background:var(--red);color:#fff;border-color:var(--red)">■ Stop</button>
+        <button class="ctrl-chip" id="btnPlay" onclick="playScore()" style="background:var(--green);color:#000;border-color:var(--green)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><polygon points="5 3 19 12 5 21 5 3"/></svg> Tocar</button>
+        <button class="ctrl-chip" id="btnStop" onclick="stopScore()" style="display:none;background:var(--red);color:#fff;border-color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="3" y="3" width="18" height="18" rx="2"/></svg> Stop</button>
       </div>
 
       <div class="tb-divider"></div>
 
       <!-- Grupo: Sesión -->
       <div class="tb-group">
-        <button class="ctrl-chip" onclick="shareComposition()" title="Compartir por link">🔗 Compartir</button>
-        <button class="ctrl-chip" onclick="saveSession()" title="Guardar sesión">💾 Guardar</button>
-        <button class="ctrl-chip" onclick="loadSession()" title="Cargar sesión">📂 Cargar</button>
-        <button class="ctrl-chip" onclick="exportAudio()" title="Exportar audio WAV">🎵 Exportar</button>
+        <button class="ctrl-chip" onclick="shareComposition()" title="Compartir por link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Compartir</button>
+        <button class="ctrl-chip" onclick="saveSession()" title="Guardar sesión"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar</button>
+        <button class="ctrl-chip" onclick="loadSession()" title="Cargar sesión"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Cargar</button>
+        <button class="ctrl-chip" onclick="exportAudio()" title="Exportar audio WAV"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar</button>
       </div>
 
       <div class="tb-divider"></div>
 
       <!-- Grupo: Catálogo + Limpiar -->
       <div class="tb-group">
-        <button class="ctrl-chip" onclick="document.getElementById('signsPanel').style.display='block';renderSignsCatalog()">📖 Señas</button>
-        <button class="ctrl-chip danger" onclick="clearScore()">🗑 Limpiar</button>
+        <button class="ctrl-chip" onclick="document.getElementById('signsPanel').style.display='block';renderSignsCatalog()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Señas</button>
+        <button class="ctrl-chip danger" onclick="clearScore()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Limpiar</button>
         <button class="ctrl-chip help-btn" onclick="showTutorialMenu()" title="Tutoriales">?</button>
       </div>
 
@@ -999,6 +165,19 @@ input[type=range].bpm-slider::-webkit-slider-thumb {
     <!-- Pentagrama -->
     <div class="score-wrap">
       <div class="score-label">Pentagrama</div>
+
+      <!-- Hint bar (Fase 1 v2) -->
+      <div class="es-hint-bar" id="esHintBar">
+        <span class="es-hint-bar__dot" id="esHintDot"></span>
+        <span class="es-hint-bar__text" id="esHintText">Activá la cámara para empezar a capturar ritmos</span>
+        <button class="es-hint-bar__cta" id="esHintCta"
+                style="display:none"
+                onclick="document.getElementById('btnStart').click()">Activar →</button>
+        <button class="es-hint-bar__close" id="esHintClose"
+                onclick="percuHint.dismiss()"
+                title="No mostrar más">✕</button>
+      </div>
+
       <canvas id="staffCanvas"></canvas>
     </div>
 
@@ -1080,7 +259,7 @@ const TOUR_STEPS = [
   {
     target: '.toolbar',
     title: '7. Compartir, guardar, exportar',
-    desc: '🔗 Compartir genera un link para enviar tu composición · 💾 Guardar/Cargar trabaja con archivos · 🎵 Exportar baja el audio como WAV.',
+    desc: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Compartir genera un link para enviar tu composición · <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar/Cargar trabaja con archivos · <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar baja el audio como WAV.',
     placement: 'bottom'
   },
 ];
@@ -1995,7 +1174,7 @@ const TUTORIALS = {
       {
         time: 7, duration: 5, subtitle: '3. Click Capturar → compás listo',
         render: () => `<div style="display:flex;flex-direction:column;align-items:center;gap:14px">
-          <button style="padding:10px 22px;border-radius:999px;border:none;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;font-size:13px;font-weight:600;animation:tutPulse 1s infinite">⊕ Capturar</button>
+          <button style="padding:10px 22px;border-radius:999px;border:none;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;font-size:13px;font-weight:600;animation:tutPulse 1s infinite"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Capturar</button>
           <div style="background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.08);padding:12px;max-width:320px;width:100%;animation:tutSlide 0.4s 0.5s both">
             <div style="display:flex;align-items:center;gap:8px">
               <div style="width:48px;color:#ff6b6b;font-weight:600;font-size:12px">Conga</div>
@@ -2175,8 +1354,8 @@ const TUTORIALS = {
     duration: 11,
     scenes: [
       {
-        time: 0, duration: 3, subtitle: 'Click en 🎵 Exportar',
-        render: () => `<button style="padding:12px 24px;border-radius:999px;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;border:none;font-size:14px;font-weight:600;animation:tutPulse 1s infinite;box-shadow:0 8px 24px rgba(10,132,255,0.4)">🎵 Exportar</button>`
+        time: 0, duration: 3, subtitle: 'Click en <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar',
+        render: () => `<button style="padding:12px 24px;border-radius:999px;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;border:none;font-size:14px;font-weight:600;animation:tutPulse 1s infinite;box-shadow:0 8px 24px rgba(10,132,255,0.4)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar</button>`
       },
       {
         time: 3, duration: 4, subtitle: 'La app renderiza el audio',
@@ -3512,6 +2691,52 @@ async function loadCongaBuffer() {
 }
 
 // Precarga al primer gesto para que el primer golpe no tenga latencia
+
+// Sonido de captura neutro (snap sintético, sin sample del quinto)
+function playCaptureSnap() {
+  try {
+    initAudio();
+    const ctx = state.audioCtx;
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime + 0.01;
+
+    // Cuerpo: click percusivo (ruido filtrado, decay corto)
+    const noise = ctx.createBufferSource();
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.08, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    noise.buffer = buf;
+
+    const bpf = ctx.createBiquadFilter();
+    bpf.type = 'bandpass';
+    bpf.frequency.value = 2200;
+    bpf.Q.value = 0.8;
+
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0.55, now);
+    env.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
+
+    noise.connect(bpf);
+    bpf.connect(env);
+    env.connect(ctx.destination);
+    noise.start(now);
+    noise.stop(now + 0.08);
+
+    // Tono transitorio corto para dar "pitch" al snap
+    const osc = ctx.createOscillator();
+    const oscEnv = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(900, now);
+    osc.frequency.exponentialRampToValueAtTime(300, now + 0.04);
+    oscEnv.gain.setValueAtTime(0.18, now);
+    oscEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+    osc.connect(oscEnv);
+    oscEnv.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.05);
+  } catch(e) {}
+}
+
 function prewarmAudio() { prewarmAllSamples(); }
 
 async function playConga(time, velocity=1.0) {
@@ -3842,7 +3067,7 @@ function captureCurrentPattern(insertAfter = -1) {
     // Audio feedback del step
     initAudio();
     if(state.audioCtx.state === 'suspended') state.audioCtx.resume();
-    playConga(state.audioCtx.currentTime + 0.02, 1.0);
+    playCaptureSnap();
     
     // Flash más sutil para los pasos intermedios
     const flash = document.createElement('div');
@@ -3927,7 +3152,7 @@ function captureCurrentPattern(insertAfter = -1) {
   // Audio feedback
   initAudio();
   if(state.audioCtx.state==='suspended') state.audioCtx.resume();
-  playConga(state.audioCtx.currentTime + 0.02, 1.0);
+  playCaptureSnap();
 
   rebuildScoreDisplay();
 }
@@ -4558,7 +3783,7 @@ function initVoice() {
     }
     if(!matched && /\b(stop|para|detener|detiene|frena|pausa|pause|alto|para ya)\b/.test(txt)) {
       if(state.playing) stopScore();
-      showVoiceToast('■ Stop', 'success', txt);
+      showVoiceToast('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="3" y="3" width="18" height="18" rx="2"/></svg> Stop', 'success', txt);
       matched = true;
     }
     if(!matched && /\b(limpia|limpiar|clear|reset|borra todo|limpialo|empezar de cero|de nuevo|reinicia)\b/.test(txt)) {
@@ -4730,7 +3955,7 @@ function updateVoiceUI() {
     btn.style.borderColor = '#ff453a';
     btn.style.boxShadow = '0 0 16px rgba(255,69,58,0.4)';
   } else {
-    btn.innerHTML = '🎙 Voz';
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg> Voz';
     btn.style.background = '';
     btn.style.color = '';
     btn.style.borderColor = '';
@@ -4883,6 +4108,42 @@ const LEGEND_ROWS = [
 // ═══════════════════════════════════════════════════════════════
 //  MEDIAPIPE HANDS — dos manos
 // ═══════════════════════════════════════════════════════════════
+function stopCamera() {
+  try {
+    // Detener MediaPipe camera
+    if(state._camInstance) {
+      state._camInstance.stop();
+      state._camInstance = null;
+    }
+    // Detener tracks del stream del video
+    const video = document.getElementById('videoEl');
+    if(video && video.srcObject) {
+      video.srcObject.getTracks().forEach(t => t.stop());
+      video.srcObject = null;
+    }
+    // Limpiar canvas overlay
+    const oc = document.getElementById('overlayCanvas');
+    if(oc) { const ctx = oc.getContext('2d'); ctx.clearRect(0,0,oc.width,oc.height); }
+  } catch(e) { console.warn('stopCamera:', e); }
+
+  state.cameraActive = false;
+  state._handsInstance = null;
+
+  // Resetear UI
+  document.getElementById('camOvl')?.classList.remove('hidden');
+  document.getElementById('btnStopCam')?.classList.remove('visible');
+  document.getElementById('sdot')?.classList.remove('on');
+  document.getElementById('stxt').textContent = 'Inactivo';
+  document.getElementById('fpstxt').textContent = '-- fps';
+  document.getElementById('handBadge').style.display = 'none';
+  document.getElementById('iHand').textContent = '—';
+  document.getElementById('iCount').textContent = '0';
+  updateFingerDisplay([false,false,false,false],[false,false,false,false],false,false);
+
+  // Notificar al hint bar
+  if(window.percuHint) percuHint.setCameraActive(false);
+}
+
 async function startCamera() {
   document.getElementById('camOvl').classList.add('hidden');
   document.getElementById('stxt').textContent='Cargando…';
@@ -4982,6 +4243,9 @@ async function startCamera() {
     const cam=new Camera(video,{onFrame:async()=>{await hands.send({image:video});},width:640,height:480});
     await cam.start();
     state.cameraActive=true;
+    state._camInstance=cam;
+    state._handsInstance=hands;
+    document.getElementById('btnStopCam')?.classList.add('visible');
     document.getElementById('stxt').textContent='Activo · 2 manos';
     document.getElementById('sdot').classList.add('on');
 
@@ -5650,6 +4914,111 @@ function showIOSInstall() {
   modal.querySelector('#iosOk').onclick = () => modal.remove();
   modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
 }
+</script>
+
+<script>
+// ── HINT BAR (Fase 1 v2) ─────────────────────────────────────────────────────
+(function() {
+  var LS_KEY = 'percuHintDismissed';
+
+  var percuHint = {
+    _cam: false,
+    _hand: false,
+    _content: false,
+
+    _el: function(id) { return document.getElementById(id); },
+
+    render: function() {
+      var bar  = this._el('esHintBar');
+      if (!bar) return;
+
+      // Si el usuario cerró la barra o ya hay contenido, ocultarla
+      if (localStorage.getItem(LS_KEY) || this._content) {
+        bar.classList.add('is-hidden');
+        return;
+      }
+      bar.classList.remove('is-hidden');
+
+      var dot  = this._el('esHintDot');
+      var txt  = this._el('esHintText');
+      var cta  = this._el('esHintCta');
+
+      if (!this._cam) {
+        bar.className = 'es-hint-bar';
+        if (txt) txt.textContent = 'Activá la cámara para empezar a capturar ritmos';
+        if (cta) cta.style.display = 'inline-block';
+      } else if (!this._hand) {
+        bar.className = 'es-hint-bar es-hint-bar--cam';
+        if (txt) txt.textContent = 'Cámara activa — mostrá tu mano y seleccioná un instrumento';
+        if (cta) cta.style.display = 'none';
+      } else {
+        bar.className = 'es-hint-bar es-hint-bar--ready';
+        if (txt) txt.textContent = 'Seña detectada — presioná Capturar para grabar el compás';
+        if (cta) cta.style.display = 'none';
+      }
+    },
+
+    dismiss: function() {
+      localStorage.setItem(LS_KEY, '1');
+      var bar = this._el('esHintBar');
+      if (bar) bar.classList.add('is-hidden');
+    },
+
+    setCameraActive: function(v) { this._cam = v; this.render(); },
+    setHandDetected:  function(v) { this._hand = v; this.render(); },
+    setHasContent:    function(v) { this._content = v; this.render(); }
+  };
+
+  window.percuHint = percuHint;
+
+  window.addEventListener('load', function() {
+    // Parchear startCamera
+    if (typeof startCamera === 'function') {
+      var _origStart = startCamera;
+      window.startCamera = async function() {
+        try {
+          await _origStart.apply(this, arguments);
+          percuHint.setCameraActive(true);
+        } catch(e) {
+          percuHint.setCameraActive(false);
+          throw e;
+        }
+      };
+    }
+
+    // Observar iHand para detectar mano
+    var iHand = document.getElementById('iHand');
+    if (iHand) {
+      new MutationObserver(function() {
+        var txt = iHand.textContent.trim();
+        percuHint.setHandDetected(txt !== '' && txt !== '—' && txt !== '0');
+      }).observe(iHand, { childList: true, characterData: true, subtree: true });
+    }
+
+    // Parchear captureCurrentPattern
+    if (typeof captureCurrentPattern === 'function') {
+      var _origCapture = captureCurrentPattern;
+      window.captureCurrentPattern = function() {
+        _origCapture.apply(this, arguments);
+        setTimeout(function() {
+          var iM = document.getElementById('iMeasures');
+          percuHint.setHasContent(iM ? parseInt(iM.textContent, 10) > 0 : false);
+        }, 100);
+      };
+    }
+
+    // Parchear clearScore
+    if (typeof clearScore === 'function') {
+      var _origClear = clearScore;
+      window.clearScore = function() {
+        _origClear.apply(this, arguments);
+        percuHint.setHasContent(false);
+      };
+    }
+
+    percuHint.render();
+  });
+})();
 </script>
 </body>
 </html>
