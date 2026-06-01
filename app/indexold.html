@@ -1,0 +1,3812 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/png" href="/assets/favicon.png"/>
+<link rel="apple-touch-icon" href="/assets/icon-192.png"/>
+<link rel="manifest" href="/manifest.json"/>
+<meta name="theme-color" content="#0a0a0f"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="PercuSignal"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PercuSignal</title>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&family=SF+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #000000;
+  --bg1:       #1c1c1e;
+  --bg2:       #2c2c2e;
+  --bg3:       #3a3a3c;
+  --separator: rgba(255,255,255,0.08);
+  --label1:    #ffffff;
+  --label2:    rgba(255,255,255,0.6);
+  --label3:    rgba(255,255,255,0.3);
+  --label4:    rgba(255,255,255,0.18);
+  --blue:      #0a84ff;
+  --green:     #30d158;
+  --orange:    #ff9f0a;
+  --red:       #ff453a;
+  --purple:    #bf5af2;
+  --teal:      #5ac8fa;
+  --yellow:    #ffd60a;
+  --pink:      #ff375f;
+  --fill1:     rgba(255,255,255,0.12);
+  --fill2:     rgba(255,255,255,0.08);
+  --fill3:     rgba(255,255,255,0.05);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --font:      -apple-system, 'SF Pro Display', BlinkMacSystemFont, sans-serif;
+  --mono:      'SF Mono', ui-monospace, monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--label1);
+  font-family: var(--font);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── HEADER ── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid var(--separator);
+  backdrop-filter: blur(20px);
+  background: rgba(28,28,30,0.8);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-icon {
+  width: 32px; height: 32px;
+  background: var(--blue);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.logo-text {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+.logo-sub {
+  font-size: 11px;
+  color: var(--label3);
+  font-weight: 400;
+  letter-spacing: 0.2px;
+}
+
+.hstatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--label3);
+  font-family: var(--mono);
+}
+.sdot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--label4);
+  transition: background .3s, box-shadow .3s;
+}
+.sdot.on {
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+}
+
+/* ── LAYOUT ── */
+.app {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  height: calc(100vh - 57px);
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  border-right: 1px solid var(--separator);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg1);
+}
+
+.cam-section {
+  position: relative;
+  background: #000;
+  aspect-ratio: 4/3;
+  flex-shrink: 0;
+}
+#videoEl {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  display: block;
+}
+#overlayCanvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  transform: scaleX(-1);
+  pointer-events: none;
+}
+
+/* Camera overlay */
+.cam-overlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(10px);
+  transition: opacity .4s;
+  overflow-y: auto;
+}
+.cam-overlay.hidden { opacity: 0; pointer-events: none; }
+
+.btn-cam {
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: 980px;
+  padding: 10px 24px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity .15s, transform .15s;
+}
+.btn-cam:hover { opacity: 0.85; }
+.btn-cam:active { transform: scale(0.97); }
+.cam-hint {
+  font-size: 12px;
+  color: rgba(255,255,255,0.45);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* Hand badge */
+.hand-badge {
+  position: absolute;
+  bottom: 10px; left: 10px; right: 10px;
+  background: rgba(28,28,30,0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.hb-note { color: var(--blue); font-weight: 500; }
+
+/* ── FINGER DISPLAY ── */
+.finger-section {
+  padding: 16px;
+  border-bottom: 1px solid var(--separator);
+  flex-shrink: 0;
+}
+.section-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--label3);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 12px;
+}
+.fingers-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  justify-content: center;
+  height: 80px;
+}
+.finger { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.finger-shape {
+  width: 18px;
+  border-radius: 9px 9px 3px 3px;
+  background: var(--fill2);
+  border: 1px solid var(--separator);
+  transition: height .18s cubic-bezier(.34,1.56,.64,1), background .18s;
+}
+.finger-shape.up { background: var(--blue); border-color: var(--blue); }
+.finger-label {
+  font-size: 8px;
+  color: var(--label3);
+  font-family: var(--mono);
+  letter-spacing: 0.3px;
+}
+.finger-shape.up + .finger-label { color: var(--blue); }
+
+/* ── INSTRUMENT SELECTOR ── */
+.instr-section {
+  padding: 14px 16px;
+  flex: 1;
+  overflow-y: auto;
+}
+.instr-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  row-gap: 8px;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.instr-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid transparent;
+  background: var(--fill2);
+  cursor: pointer;
+  transition: all .15s;
+  color: var(--label1);
+  font-family: var(--font);
+  position: relative;
+}
+.instr-btn:active { transform: scale(0.95); }
+.instr-btn { min-height: 78px; }
+.instr-btn.active {
+  background: var(--fill1);
+  border-color: var(--i-color);
+  box-shadow: 0 0 0 1px var(--i-color)20;
+}
+.instr-emoji { font-size: 22px; }
+.instr-name {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--label2);
+  letter-spacing: 0.2px;
+}
+.instr-btn.active .instr-name { color: var(--i-color); }
+
+/* ── Slider vertical delicado tipo Apple ── */
+.vol-slider-vertical {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 3px;
+  height: 48px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  margin: 0;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  position: relative;
+  transition: background .15s, width .15s;
+}
+.vol-slider-vertical:hover {
+  background: rgba(255,255,255,0.12);
+  width: 4px;
+}
+/* Thumb circular pequeño */
+.vol-slider-vertical::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--track-color, #fff);
+  border: 1.5px solid rgba(255,255,255,0.9);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transition: transform .15s, box-shadow .15s;
+}
+.vol-slider-vertical::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.vol-slider-vertical::-webkit-slider-thumb:active {
+  transform: scale(1.4);
+}
+.vol-slider-vertical::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--track-color, #fff);
+  border: 1.5px solid rgba(255,255,255,0.9);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.vol-slider-vertical::-moz-range-track {
+  background: rgba(255,255,255,0.06);
+  width: 3px;
+  border-radius: 2px;
+}
+.mute-dot {
+  position: absolute;
+  top: 5px; right: 5px;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: transparent;
+  transition: background .15s;
+}
+.mute-dot.muted { background: var(--red); }
+.loop-dot {
+  position: absolute;
+  top: 5px; left: 5px;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: transparent;
+  transition: background .15s;
+}
+.loop-dot.active { background: var(--green); }
+
+/* Controls row under instruments */
+.instr-controls {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ctrl-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 980px;
+  border: 1px solid var(--separator);
+  background: var(--fill2);
+  font-size: 11px;
+  color: var(--label2);
+  cursor: pointer;
+  transition: all .15s;
+  font-family: var(--font);
+  white-space: nowrap;
+}
+.ctrl-chip:hover { background: var(--fill1); }
+.ctrl-chip:active { transform: scale(0.96); }
+.ctrl-chip.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+.ctrl-chip.danger:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+/* ── MAIN CONTENT ── */
+.main-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ── TOOLBAR ── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--separator);
+  flex-wrap: wrap;
+  background: var(--bg1);
+}
+
+.seg-control {
+  display: flex;
+  background: var(--fill2);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 1px;
+}
+.seg-btn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--label2);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+}
+.seg-btn.active {
+  background: var(--bg3);
+  color: var(--label1);
+}
+
+.tb-select {
+  background: var(--fill2);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-sm);
+  color: var(--label1);
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 5px 10px;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+.bpm-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--fill2);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+}
+.bpm-num {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--orange);
+  min-width: 32px;
+  text-align: center;
+}
+.bpm-step {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: var(--fill2);
+  color: var(--label1);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .12s;
+}
+.bpm-step:hover { background: var(--fill1); }
+input[type=range].bpm-slider {
+  width: 80px;
+  -webkit-appearance: none;
+  height: 2px;
+  background: var(--blue);
+  border-radius: 1px;
+  outline: none;
+  cursor: pointer;
+}
+input[type=range].bpm-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+.bpm-presets { display: flex; gap: 3px; }
+.bpm-preset {
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: none;
+  background: var(--fill2);
+  color: var(--label3);
+  font-family: var(--mono);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all .12s;
+}
+.bpm-preset:hover { background: var(--fill1); color: var(--label1); }
+.bpm-preset.active { background: var(--orange); color: #000; }
+
+.tb-spacer { flex: 1; }
+
+/* Toolbar groups */
+.tb-group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.tb-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255,255,255,0.1);
+  margin: 0 4px;
+}
+
+/* Help button (?) */
+.ctrl-chip.help-btn {
+  min-width: 28px;
+  padding: 6px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0a84ff;
+  border-color: rgba(10,132,255,0.3);
+  background: rgba(10,132,255,0.08);
+}
+.ctrl-chip.help-btn:hover {
+  background: rgba(10,132,255,0.18);
+  border-color: rgba(10,132,255,0.5);
+}
+
+/* Insert banner */
+.insert-banner {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(10,132,255,0.1);
+  border-bottom: 1px solid rgba(10,132,255,0.2);
+  font-size: 12px;
+  color: var(--blue);
+}
+
+/* ── SCORE AREA ── */
+.score-wrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px 0;
+}
+.score-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--label3);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 10px;
+}
+#staffCanvas {
+  width: 100%;
+  display: block;
+  border-radius: var(--radius);
+  background: #111;
+}
+
+/* ── TRACKS / HISTORY ── */
+.tracks-section {
+  border-top: 1px solid var(--separator);
+  background: var(--bg1);
+  padding: 12px 20px;
+  flex-shrink: 0;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.tracks-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--label3);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#historyScroll {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Track rows */
+.measure-thumb {
+  flex-shrink: 0;
+  background: var(--fill2);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: all .15s;
+  min-width: 90px;
+  text-align: center;
+}
+.measure-thumb:hover { background: var(--fill1); }
+.measure-thumb.active {
+  border-color: var(--blue);
+  background: rgba(10,132,255,0.1);
+}
+.measure-thumb.drag-over-left { border-left: 2px solid var(--blue); }
+.measure-thumb.drag-over-right { border-right: 2px solid var(--blue); }
+.mt-number {
+  font-size: 9px;
+  font-family: var(--mono);
+  color: var(--label3);
+  margin-bottom: 3px;
+}
+.mt-pattern { font-size: 10px; color: var(--label2); }
+.thumb-btn {
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--separator);
+  background: transparent;
+  color: var(--label2);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all .12s;
+  font-family: var(--font);
+}
+.thumb-btn:hover { background: var(--fill1); color: var(--label1); }
+.thumb-btn.danger:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+/* ── INFO STRIP ── */
+.info-strip {
+  display: flex;
+  gap: 20px;
+  padding: 8px 20px;
+  border-top: 1px solid var(--separator);
+  background: var(--bg1);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--label3);
+  flex-shrink: 0;
+}
+.info-strip span { color: var(--label2); font-weight: 500; }
+
+/* ── FLASH ── */
+.flash {
+  position: fixed; inset: 0;
+  background: rgba(10,132,255,0.12);
+  pointer-events: none;
+  z-index: 999;
+  animation: flash .3s ease-out forwards;
+}
+@keyframes flash { from{opacity:1} to{opacity:0} }
+
+/* ── SCROLLBARS ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--fill1); border-radius: 2px; }
+
+/* ── RESPONSIVE ── */
+/* ─── MOBILE TABLET (1024px) ─── */
+@media (max-width: 1024px) {
+  .toolbar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding-bottom: 8px;
+  }
+  .tb-divider { display: none; }
+}
+
+/* ─── MOBILE (820px) ─── */
+@media (max-width: 820px) {
+  .app { 
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+  }
+  .sidebar { 
+    border-right: none; 
+    border-bottom: 1px solid var(--separator);
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+  .instr-grid { grid-template-columns: repeat(3, 1fr); }
+  
+  /* Cámara más grande en mobile */
+  .cam-section { aspect-ratio: 4/3; min-height: 240px; }
+  
+  /* Header compacto */
+  header {
+    padding: 8px 12px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .logo-text { font-size: 14px; }
+  .logo-sub { font-size: 10px; }
+  .hstatus { font-size: 11px; }
+  
+  /* Botón instalar más chico */
+  #btnInstall { padding: 5px 10px !important; font-size: 11px !important; }
+}
+
+/* ─── MOBILE PEQUEÑO (640px) ─── */
+@media (max-width: 640px) {
+  body { font-size: 14px; }
+  
+  /* Header ultra compacto */
+  header { padding: 6px 10px; }
+  .logo-icon { width: 32px !important; height: 32px !important; }
+  .logo-text { font-size: 13px; }
+  .logo-sub { display: none; } /* ocultar subtítulo */
+  
+  /* Status: ocultar FPS, dejar solo dot + plan */
+  .hstatus #fpstxt, .hstatus #stxt { display: none; }
+  .hstatus > span:not(#planBadge):not(#fpstxt):not(#stxt) { display: none; }
+  
+  /* App grid */
+  .app { padding: 8px; gap: 8px; }
+  
+  /* Sidebar más compacta */
+  .sidebar {
+    padding: 8px;
+    max-height: 42vh;
+  }
+  
+  /* Cámara mejor visible */
+  .cam-section { aspect-ratio: 4/3; min-height: 220px; }
+  
+  /* Instrumentos: grid 3 columnas */
+  .instr-grid { 
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .instr-btn {
+    min-height: 70px !important;
+    padding: 6px 4px !important;
+  }
+  .instr-btn .instr-name { font-size: 9px !important; }
+  [data-icon-slot] {
+    width: 38px !important;
+    height: 50px !important;
+  }
+  
+  /* Toolbar: scroll horizontal */
+  .toolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 4px 10px;
+    scroll-snap-type: x mandatory;
+  }
+  .toolbar::-webkit-scrollbar { height: 3px; }
+  .toolbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+  
+  .tb-spacer { display: none; }
+  .tb-group {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+  .tb-divider { display: none; }
+  
+  .ctrl-chip {
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-height: 36px;
+  }
+  .ctrl-chip.help-btn {
+    padding: 8px 11px !important;
+    min-width: 36px;
+  }
+  
+  /* Pentagrama */
+  .staff-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #staffCanvas { 
+    min-width: 600px;
+    height: auto !important;
+  }
+  
+  /* Catálogo signs panel */
+  #signsPanel { 
+    padding: 12px !important;
+    max-height: 80vh !important;
+  }
+  
+  /* Modales tutoriales: ocupar pantalla casi entera */
+  #tutorialModal > div,
+  #tutorialMenuModal > div,
+  #onboardingModal > div,
+  #feedbackModal > div,
+  #shareModal > div {
+    max-height: 90vh;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+  
+  #tutStage {
+    height: 220px !important;
+  }
+  
+  /* Feedback button más chico en mobile */
+  #feedbackFloatBtn {
+    bottom: 10px !important;
+    right: 10px !important;
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 13px !important;
+  }
+  
+  /* Metrónomo más chico */
+  #metronome {
+    top: 8px !important;
+    padding: 5px 10px !important;
+    font-size: 11px !important;
+  }
+  #metronome #metroBpm { display: none; }
+  
+  /* Panel de usuario */
+  #userPanelModal > div {
+    margin: 16px !important;
+    max-width: calc(100% - 32px) !important;
+  }
+  
+  /* Tracks/Pistas */
+  .track-row, .pista-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  
+  /* BPM input */
+  .bpm-row, .bpm-controls {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  
+  /* Cam overlay logo más chico en mobile */
+  .cam-overlay img {
+    width: 56px !important;
+    height: 56px !important;
+  }
+  .cam-overlay > div[style*="font-size:14px"] { font-size: 12px !important; }
+  .cam-hint { font-size: 10px !important; }
+  .btn-cam {
+    padding: 9px 18px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* ─── MOBILE LANDSCAPE (height pequeño) ─── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .sidebar { max-height: 100vh; }
+  .cam-section { aspect-ratio: 16/9; min-height: 180px; }
+  header { padding: 4px 10px; }
+  .logo-text { font-size: 12px; }
+  .logo-sub { display: none; }
+}
+
+/* ── EMPTY STATE HINT (Fase 1 v2) ── */
+.es-hint-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  margin: 0 20px 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  transition: opacity .3s, transform .3s;
+}
+.es-hint-bar.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: none;
+}
+.es-hint-bar__dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  flex-shrink: 0;
+  transition: background .3s;
+}
+.es-hint-bar--cam   .es-hint-bar__dot { background: var(--orange); }
+.es-hint-bar--ready .es-hint-bar__dot { background: var(--green); }
+.es-hint-bar__text {
+  flex: 1;
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.35);
+  font-family: var(--font);
+  transition: color .3s;
+}
+.es-hint-bar--cam   .es-hint-bar__text { color: rgba(255,255,255,0.5); }
+.es-hint-bar--ready .es-hint-bar__text { color: rgba(255,255,255,0.6); }
+.es-hint-bar__cta {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 5px;
+  border: 1px solid rgba(10,132,255,.35);
+  background: rgba(10,132,255,.1);
+  color: #5ac2ff;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: var(--font);
+  transition: background .15s;
+  flex-shrink: 0;
+}
+.es-hint-bar__cta:hover { background: rgba(10,132,255,.2); }
+.es-hint-bar__close {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.2);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: color .15s, background .15s;
+  line-height: 1;
+  padding: 0;
+}
+.es-hint-bar__close:hover {
+  color: rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.08);
+}
+
+/* Fase 2: SVG icons en toolbar */
+.ctrl-chip svg { vertical-align: middle; flex-shrink: 0; }
+
+/* Botón desactivar cámara — esquina superior derecha */
+.btn-cam-stop {
+  position: absolute;
+  top: 8px; right: 8px;
+  z-index: 10;
+  display: none;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 980px;
+  border: 1px solid rgba(255,69,58,0.4);
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  color: var(--red);
+  font-size: 11px;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.btn-cam-stop:hover {
+  background: rgba(255,69,58,0.15);
+  border-color: rgba(255,69,58,0.7);
+}
+.btn-cam-stop.visible { display: flex; }
+
+</style>
+  <script src="/assets/audio.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon"><img src="/assets/logo.png" alt="PercuSignal" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/></div>
+    <div>
+      <div class="logo-text">PercuSignal</div>
+      <div class="logo-sub">Lectura de Dedos</div>
+    </div>
+  </div>
+  <div class="hstatus">
+    <div class="sdot" id="sdot"></div>
+    <span id="stxt">Inactivo</span>
+    <span style="opacity:.3;margin:0 4px">·</span>
+    <span id="fpstxt">-- fps</span>
+    <span style="opacity:.3;margin:0 8px">·</span>
+    <div id="planBadge" style="display:flex;align-items:center"></div>
+  </div>
+</header>
+
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <div class="sidebar">
+
+    <!-- Cámara -->
+    <div class="cam-section">
+      <video id="videoEl" autoplay muted playsinline></video>
+      <canvas id="overlayCanvas"></canvas>
+      <div class="hand-badge" id="handBadge" style="display:none">
+        <div class="hb-fingers" id="hbFingers">·····</div>
+        <div class="hb-note" id="hbNote">—</div>
+      </div>
+      <!-- Botón desactivar cámara (visible solo cuando está activa) -->
+      <button class="btn-cam-stop" id="btnStopCam" onclick="stopCamera()" aria-label="Desactivar cámara">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Desactivar
+      </button>
+
+      <div class="cam-overlay" id="camOvl">
+        <img src="/assets/logo.png" alt="PercuSignal" style="width:72px;height:72px;border-radius:14px;box-shadow:0 6px 20px rgba(10,132,255,0.3)"/>
+        <div style="font-size:14px;font-weight:600;color:#fff;margin-top:2px">PercuSignal</div>
+        <div class="cam-hint" style="font-size:11px">Mostrá tu mano a la cámara<br>para generar ritmos</div>
+        <button class="btn-cam" id="btnStart" style="margin-top:4px">Activar cámara</button>
+        <button onclick="showTutorial('gesture')" style="background:transparent;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);padding:5px 12px;border-radius:980px;font-size:11px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ¿Cómo funciona?</button>
+        <div class="cam-hint" style="font-size:10px;margin-top:auto">Requiere permiso de cámara</div>
+      </div>
+    </div>
+
+    <!-- Dedos detectados -->
+    <div class="finger-section">
+      <div class="section-label">Dedos</div>
+      <div class="fingers-row" id="fingersRow"></div>
+    </div>
+
+    <!-- Instrumentos -->
+    <div class="instr-section">
+      <div class="section-label">Instrumento activo</div>
+      <div class="instr-grid" id="instrBtns"></div>
+
+      <div class="instr-controls" id="instrControls">
+        <!-- M y ↺ por instrumento se generan en JS -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="main-content">
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+
+      <!-- Compás -->
+      <div class="seg-control" id="segCompas">
+        <button class="seg-btn" onclick="setCompas('2/4');segActive('segCompas',this)">2/4</button>
+        <button class="seg-btn active" onclick="setCompas('4/4');segActive('segCompas',this)">4/4</button>
+        <button class="seg-btn" onclick="setCompas('3/4');segActive('segCompas',this)">3/4</button>
+        <button class="seg-btn" onclick="setCompas('6/8');segActive('segCompas',this)">6/8</button>
+        <button class="seg-btn" onclick="setCompas('3/3');segActive('segCompas',this)">3/3</button>
+      </div>
+
+      <!-- BPM -->
+      <div class="bpm-pill">
+        <button class="bpm-step" onclick="stepBpm(-5)">−</button>
+        <input type="range" class="bpm-slider" id="bpmSlider" min="40" max="240" value="100"
+          oninput="setBpm(this.value)">
+        <div class="bpm-num" id="bpmValue">100</div>
+        <button class="bpm-step" onclick="stepBpm(+5)">+</button>
+      </div>
+      <div class="bpm-presets">
+        <button class="bpm-preset" onclick="setBpm(60)">60</button>
+        <button class="bpm-preset" onclick="setBpm(80)">80</button>
+        <button class="bpm-preset active" onclick="setBpm(100)">100</button>
+        <button class="bpm-preset" onclick="setBpm(120)">120</button>
+        <button class="bpm-preset" onclick="setBpm(160)">160</button>
+      </div>
+
+      <div class="tb-spacer"></div>
+
+      <!-- Grupo: Captura -->
+      <div class="tb-group">
+        <button class="ctrl-chip help-btn" onclick="showTutorial('voice')" title="Cómo usar voz">?</button>
+        <button class="ctrl-chip" id="btnVoice" onclick="toggleVoice()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg> Voz</button>
+        <button class="ctrl-chip" id="btnCapture" onclick="captureCurrentPattern()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Capturar</button>
+      </div>
+
+      <div class="tb-divider"></div>
+
+      <!-- Grupo: Reproducción -->
+      <div class="tb-group">
+        <button class="ctrl-chip" id="btnPlay" onclick="playScore()" style="background:var(--green);color:#000;border-color:var(--green)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><polygon points="5 3 19 12 5 21 5 3"/></svg> Tocar</button>
+        <button class="ctrl-chip" id="btnStop" onclick="stopScore()" style="display:none;background:var(--red);color:#fff;border-color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="3" y="3" width="18" height="18" rx="2"/></svg> Stop</button>
+      </div>
+
+      <div class="tb-divider"></div>
+
+      <!-- Grupo: Sesión -->
+      <div class="tb-group">
+        <button class="ctrl-chip" onclick="shareComposition()" title="Compartir por link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Compartir</button>
+        <button class="ctrl-chip" onclick="saveSession()" title="Guardar sesión"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar</button>
+        <button class="ctrl-chip" onclick="loadSession()" title="Cargar sesión"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Cargar</button>
+        <button class="ctrl-chip" onclick="exportAudio()" title="Exportar audio WAV"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar</button>
+      </div>
+
+      <div class="tb-divider"></div>
+
+      <!-- Grupo: Catálogo + Limpiar -->
+      <div class="tb-group">
+        <button class="ctrl-chip" onclick="document.getElementById('signsPanel').style.display='block';renderSignsCatalog()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Señas</button>
+        <button class="ctrl-chip danger" onclick="clearScore()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Limpiar</button>
+        <button class="ctrl-chip help-btn" onclick="showTutorialMenu()" title="Tutoriales">?</button>
+      </div>
+
+    </div>
+
+    <!-- Insert banner -->
+    <div class="insert-banner" id="insertBanner">
+      <span>Mostrá la seña → capturá <strong id="insertAfterNum"></strong></span>
+      <button class="ctrl-chip active" onclick="confirmInsert()" style="background:var(--blue);color:#fff;border-color:var(--blue)">✓ Aquí</button>
+      <button class="ctrl-chip" onclick="cancelInsert()">✕</button>
+    </div>
+
+    <!-- Pentagrama -->
+    <div class="score-wrap">
+      <div class="score-label">Pentagrama</div>
+
+      <!-- Hint bar (Fase 1 v2) -->
+      <div class="es-hint-bar" id="esHintBar">
+        <span class="es-hint-bar__dot" id="esHintDot"></span>
+        <span class="es-hint-bar__text" id="esHintText">Activá la cámara para empezar a capturar ritmos</span>
+        <button class="es-hint-bar__cta" id="esHintCta"
+                style="display:none"
+                onclick="document.getElementById('btnStart').click()">Activar →</button>
+        <button class="es-hint-bar__close" id="esHintClose"
+                onclick="percuHint.dismiss()"
+                title="No mostrar más">✕</button>
+      </div>
+
+      <canvas id="staffCanvas"></canvas>
+    </div>
+
+    <!-- Pistas / historial -->
+    <div class="tracks-section">
+      <div class="tracks-label">
+        <span>Pistas</span>
+        <span style="color:var(--label3);font-family:var(--mono);font-size:10px">
+          <span id="iMeasures">0</span> compases
+        </span>
+      </div>
+      <div id="historyScroll"></div>
+    </div>
+
+    <!-- Info strip -->
+    <div class="info-strip">
+      <div>Mano <span id="iHand">—</span></div>
+      <div>Dedos <span id="iCount">0</span></div>
+      <div>BPM <span id="iBpm">100</span></div>
+      <div>Compases <span id="iMeasures2">0</span></div>
+    </div>
+
+  
+    <!-- Señas del libro -->
+    <div id="signsPanel" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);overflow-y:auto;padding:20px">
+      <div style="max-width:900px;margin:0 auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div style="font-size:20px;font-weight:600">Señas del libro</div>
+          <button onclick="document.getElementById('signsPanel').style.display='none'"
+            style="padding:8px 16px;border-radius:980px;border:none;background:var(--fill1);color:var(--label1);font-size:14px;cursor:pointer">✕ Cerrar</button>
+        </div>
+        <div id="signsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px"></div>
+      </div>
+    </div>
+</div><!-- /main-content -->
+</div><!-- /app -->
+
+<script>// ═══════════════════════════════════════════════════════════════
+//  PRODUCT TOUR INTERACTIVO
+// ═══════════════════════════════════════════════════════════════
+
+const TOUR_STEPS = [
+  {
+    target: '#btnStart',
+    title: '1. Activá la cámara',
+    desc: 'Acá empieza todo. Cuando hagas click, el navegador te va a pedir permiso para usar la cámara. La IA detecta tus dedos 100% local — nada sale de tu dispositivo.',
+    placement: 'right'
+  },
+  {
+    target: '.instr-grid',
+    title: '2. Elegí instrumento',
+    desc: 'Tu plan Free incluye conga y clave. Premium desbloquea los 6 (surdo, campana, cajón, shekeré). Cada uno tiene su slider de volumen y botones Mute / Loop.',
+    placement: 'right'
+  },
+  {
+    target: '#btnVoice',
+    title: '3. Captura por voz (opcional)',
+    desc: 'Activala y decí "ya", "captura" o "toma" para grabar sin tocar la pantalla. Ideal para profesores que dirigen con señas y quieren las manos libres.',
+    placement: 'bottom'
+  },
+  {
+    target: '#btnCapture',
+    title: '4. Capturar el patrón',
+    desc: 'Cuando tu mano tenga la seña lista, hacé click acá (o decí "ya"). El compás se guarda en el pentagrama. Podés cambiar de instrumento y agregar otra pista encima.',
+    placement: 'bottom'
+  },
+  {
+    target: '#segCompas',
+    title: '5. Métrica musical',
+    desc: '2/4 para marchas. 4/4 para todo lo popular. 3/4 para vals. 6/8 para chacarera/candombe. 3/3 captura en 3 pasos para ritmos compuestos.',
+    placement: 'bottom'
+  },
+  {
+    target: '#btnPlay',
+    title: '6. Reproducir',
+    desc: 'Toca lo que armaste, en loop. Vas a ver el playhead amarillo moverse por el pentagrama y el metrónomo arriba marcando el tempo.',
+    placement: 'bottom'
+  },
+  {
+    target: '.toolbar',
+    title: '7. Compartir, guardar, exportar',
+    desc: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Compartir genera un link para enviar tu composición · <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar/Cargar trabaja con archivos · <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar baja el audio como WAV.',
+    placement: 'bottom'
+  },
+];
+
+let tourCurrentStep = 0;
+let tourSpotlightEl = null;
+let tourTooltipEl = null;
+
+function startProductTour() {
+  if(localStorage.getItem('tour_done')) return;
+  tourCurrentStep = 0;
+  renderTourStep();
+}
+
+function renderTourStep() {
+  cleanupTour();
+  
+  if(tourCurrentStep >= TOUR_STEPS.length) {
+    finishTour();
+    return;
+  }
+  
+  const step = TOUR_STEPS[tourCurrentStep];
+  const target = document.querySelector(step.target);
+  
+  if(!target) {
+    console.warn('[Tour] Target no encontrado:', step.target);
+    tourCurrentStep++;
+    setTimeout(renderTourStep, 100);
+    return;
+  }
+  
+  // Scroll al target si no está visible
+  const rect = target.getBoundingClientRect();
+  if(rect.top < 0 || rect.bottom > window.innerHeight) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => renderTourStepInternal(target, step), 400);
+  } else {
+    renderTourStepInternal(target, step);
+  }
+}
+
+function renderTourStepInternal(target, step) {
+  const rect = target.getBoundingClientRect();
+  const pad = 8;
+  
+  // Crear overlay oscuro con agujero (clip-path)
+  const overlay = document.createElement('div');
+  overlay.id = 'tourOverlay';
+  overlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    pointer-events: auto;
+    animation: tourFadeIn 0.3s ease-out;
+  `;
+  // Usamos clip-path para hacer el agujero (rectángulo invertido)
+  const top = rect.top - pad;
+  const left = rect.left - pad;
+  const right = rect.right + pad;
+  const bottom = rect.bottom + pad;
+  overlay.style.clipPath = `polygon(
+    0 0, 
+    100% 0, 
+    100% 100%, 
+    0 100%, 
+    0 ${top}px, 
+    ${left}px ${top}px, 
+    ${left}px ${bottom}px, 
+    ${right}px ${bottom}px, 
+    ${right}px ${top}px, 
+    0 ${top}px
+  )`;
+  document.body.appendChild(overlay);
+  tourSpotlightEl = overlay;
+  
+  // Borde resaltado alrededor del target
+  const highlight = document.createElement('div');
+  highlight.id = 'tourHighlight';
+  highlight.style.cssText = `
+    position: fixed;
+    top: ${top}px;
+    left: ${left}px;
+    width: ${rect.width + pad*2}px;
+    height: ${rect.height + pad*2}px;
+    border: 2px solid #0a84ff;
+    border-radius: 12px;
+    box-shadow: 0 0 0 4px rgba(10,132,255,0.3), 0 0 30px rgba(10,132,255,0.5);
+    pointer-events: none;
+    z-index: 9001;
+    animation: tourPulse 2s infinite, tourFadeIn 0.3s ease-out;
+  `;
+  document.body.appendChild(highlight);
+  
+  // Tooltip
+  const tooltip = document.createElement('div');
+  tooltip.id = 'tourTooltip';
+  tooltip.style.cssText = `
+    position: fixed;
+    z-index: 9002;
+    background: linear-gradient(180deg, #1c1c28, #0a0a0f);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 18px 20px;
+    max-width: 320px;
+    box-shadow: 0 16px 50px rgba(0,0,0,0.6);
+    color: #fff;
+    font-family: var(--font);
+    animation: tourSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  `;
+  tooltip.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-size:11px;color:#0a84ff;font-weight:600;letter-spacing:0.5px">PASO ${tourCurrentStep + 1} DE ${TOUR_STEPS.length}</div>
+      <button onclick="skipTour()" style="background:transparent;border:none;color:rgba(255,255,255,0.4);font-size:11px;cursor:pointer;font-family:inherit;padding:2px 6px">Saltar tour</button>
+    </div>
+    <h3 style="font-size:16px;font-weight:600;margin:0 0 8px;letter-spacing:-0.3px">${step.title}</h3>
+    <p style="margin:0 0 16px;color:rgba(255,255,255,0.7);font-size:13px;line-height:1.5">${step.desc}</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div style="display:flex;gap:4px">
+        ${TOUR_STEPS.map((_,i) => `<div style="width:${i===tourCurrentStep?'18':'6'}px;height:6px;border-radius:3px;background:${i===tourCurrentStep?'#0a84ff':'rgba(255,255,255,0.15)'};transition:width .3s"></div>`).join('')}
+      </div>
+      <div style="display:flex;gap:6px">
+        ${tourCurrentStep > 0 ? '<button onclick="prevTourStep()" style="padding:7px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:rgba(255,255,255,0.85);font-size:12px;cursor:pointer;font-family:inherit">Atrás</button>' : ''}
+        <button onclick="nextTourStep()" style="padding:7px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 3px 10px rgba(10,132,255,0.3)">${tourCurrentStep === TOUR_STEPS.length - 1 ? '¡Empezar! →' : 'Siguiente →'}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(tooltip);
+  tourTooltipEl = tooltip;
+  
+  // Posicionar tooltip al lado del target
+  setTimeout(() => {
+    const tooltipRect = tooltip.getBoundingClientRect();
+    let ttTop, ttLeft;
+    
+    const placement = step.placement || 'bottom';
+    const margin = 16;
+    
+    if(placement === 'right') {
+      ttLeft = rect.right + margin;
+      ttTop = rect.top + (rect.height / 2) - (tooltipRect.height / 2);
+    } else if(placement === 'left') {
+      ttLeft = rect.left - tooltipRect.width - margin;
+      ttTop = rect.top + (rect.height / 2) - (tooltipRect.height / 2);
+    } else if(placement === 'top') {
+      ttTop = rect.top - tooltipRect.height - margin;
+      ttLeft = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+    } else { // bottom
+      ttTop = rect.bottom + margin;
+      ttLeft = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+    }
+    
+    // Clamp dentro de la pantalla
+    ttLeft = Math.max(12, Math.min(window.innerWidth - tooltipRect.width - 12, ttLeft));
+    ttTop = Math.max(12, Math.min(window.innerHeight - tooltipRect.height - 12, ttTop));
+    
+    tooltip.style.left = ttLeft + 'px';
+    tooltip.style.top = ttTop + 'px';
+  }, 50);
+}
+
+function cleanupTour() {
+  document.getElementById('tourOverlay')?.remove();
+  document.getElementById('tourHighlight')?.remove();
+  document.getElementById('tourTooltip')?.remove();
+}
+
+function nextTourStep() {
+  tourCurrentStep++;
+  renderTourStep();
+}
+
+function prevTourStep() {
+  tourCurrentStep--;
+  if(tourCurrentStep < 0) tourCurrentStep = 0;
+  renderTourStep();
+}
+
+function skipTour() {
+  localStorage.setItem('tour_done', '1');
+  cleanupTour();
+}
+
+function finishTour() {
+  cleanupTour();
+  localStorage.setItem('tour_done', '1');
+  
+  // Modal de cierre con CTA
+  const final = document.createElement('div');
+  final.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:20px;animation:tourFadeIn 0.3s';
+  final.innerHTML = `
+    <div style="background:linear-gradient(180deg,#1c1c28,#0a0a0f);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 28px;max-width:380px;width:100%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.6);animation:tourSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)">
+      <div style="font-size:54px;margin-bottom:10px">🥁</div>
+      <h2 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#fff;letter-spacing:-0.3px">¡Listo para empezar!</h2>
+      <p style="margin:0 0 20px;color:rgba(255,255,255,0.65);font-size:14px;line-height:1.5">Ya conocés todo lo importante. Cuando quieras volver a ver el tour, lo encontrás en el menú ?</p>
+      <button onclick="this.closest('div').parentElement.remove()" style="padding:12px 28px;border-radius:12px;border:none;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(10,132,255,0.4)">Activar cámara y empezar →</button>
+    </div>
+  `;
+  document.body.appendChild(final);
+}
+
+// Recalcular posición si el usuario hace scroll o resize
+window.addEventListener('resize', () => { if(tourTooltipEl) renderTourStep(); });
+
+// Inyectar animaciones CSS
+(function injectTourCSS() {
+  if(document.getElementById('tourCSS')) return;
+  const style = document.createElement('style');
+  style.id = 'tourCSS';
+  style.textContent = `
+    @keyframes tourFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes tourSlideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes tourPulse {
+      0%, 100% { box-shadow: 0 0 0 4px rgba(10,132,255,0.3), 0 0 30px rgba(10,132,255,0.5); }
+      50% { box-shadow: 0 0 0 8px rgba(10,132,255,0.15), 0 0 40px rgba(10,132,255,0.7); }
+    }
+    /* En mobile, el tooltip ocupa casi toda la pantalla abajo */
+    @media (max-width: 640px) {
+      #tourTooltip {
+        max-width: calc(100vw - 24px) !important;
+        left: 12px !important;
+        right: 12px !important;
+        bottom: 12px !important;
+        top: auto !important;
+        width: auto !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+})();
+
+
+// ═══════════════════════════════════════════════════════════════
+//  POLISH UX: Metrónomo visual + bounce captura + click sutil
+// ═══════════════════════════════════════════════════════════════
+
+// ── 1. SONIDO DE FEEDBACK (click sutil) ──
+function playClickSound() {
+  try {
+    const ctx = state?.audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if(!state?.audioCtx) state.audioCtx = ctx;
+    
+    // Generar un click corto con osc + decay rápido (sin samples)
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1200, now);
+    osc.frequency.exponentialRampToValueAtTime(400, now + 0.03);
+    
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start(now);
+    osc.stop(now + 0.06);
+  } catch(e) { console.warn('Click sound:', e); }
+}
+
+// ── 2. METRÓNOMO VISUAL ──
+// Un círculo pulsante que parpadea en cada tiempo del compás
+function ensureMetronomeIndicator() {
+  if(document.getElementById('metronome')) return;
+  
+  const m = document.createElement('div');
+  m.id = 'metronome';
+  m.style.cssText = `
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 999px;
+    z-index: 1500;
+    pointer-events: none;
+  `;
+  m.innerHTML = `
+    <div id="metroDot" style="width:12px;height:12px;border-radius:50%;background:#0a84ff;transition:transform .08s,background .08s,box-shadow .08s"></div>
+    <span id="metroBeat" style="color:#fff;font-family:monospace;font-size:13px;font-weight:600;min-width:30px;text-align:center">1</span>
+    <span style="color:rgba(255,255,255,0.4);font-size:11px">·</span>
+    <span id="metroBpm" style="color:rgba(255,255,255,0.7);font-size:11px;font-family:monospace">100 BPM</span>
+  `;
+  document.body.appendChild(m);
+}
+
+function showMetronome() {
+  ensureMetronomeIndicator();
+  const el = document.getElementById('metronome');
+  if(el) {
+    el.style.display = 'flex';
+    document.getElementById('metroBpm').textContent = (state?.bpm || 100) + ' BPM';
+  }
+}
+
+function hideMetronome() {
+  const el = document.getElementById('metronome');
+  if(el) el.style.display = 'none';
+}
+
+function pulseMetronome(beatIdx, isStrong) {
+  const dot = document.getElementById('metroDot');
+  const beatLabel = document.getElementById('metroBeat');
+  if(!dot || !beatLabel) return;
+  
+  // Mostrar número del beat (1-4 en 4/4)
+  const beatsPerMeasure = state?.compas === '3/4' ? 3 : (state?.compas === '2/4' ? 2 : (state?.compas === '6/8' ? 2 : 4));
+  const beatNum = (beatIdx % beatsPerMeasure) + 1;
+  beatLabel.textContent = beatNum;
+  
+  // Tiempo fuerte (1) más intenso
+  if(isStrong) {
+    dot.style.background = '#ffd60a';
+    dot.style.boxShadow = '0 0 24px rgba(255,214,10,0.8), 0 0 8px rgba(255,214,10,1)';
+    dot.style.transform = 'scale(1.6)';
+    beatLabel.style.color = '#ffd60a';
+  } else {
+    dot.style.background = '#0a84ff';
+    dot.style.boxShadow = '0 0 16px rgba(10,132,255,0.6)';
+    dot.style.transform = 'scale(1.3)';
+    beatLabel.style.color = '#fff';
+  }
+  
+  // Volver a estado normal después de 100ms
+  setTimeout(() => {
+    if(!dot) return;
+    dot.style.transform = 'scale(1)';
+    dot.style.boxShadow = '0 0 6px rgba(10,132,255,0.3)';
+    dot.style.background = '#0a84ff';
+  }, 100);
+}
+
+// ── 3. ANIMACIÓN DE CAPTURA (bounce) ──
+function animateCaptureSuccess() {
+  // Buscar el último compás capturado en cada pista
+  const thumbs = document.querySelectorAll('.measure-thumb');
+  if(thumbs.length === 0) return;
+  
+  // Agarrar el último de cada pista
+  const lastIdx = Math.max(0, ...Array.from(thumbs).map(t => parseInt(t.dataset.idx || '0')));
+  const lastThumbs = Array.from(thumbs).filter(t => parseInt(t.dataset.idx) === lastIdx);
+  
+  lastThumbs.forEach(thumb => {
+    thumb.style.animation = 'captureBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    setTimeout(() => { thumb.style.animation = ''; }, 600);
+  });
+  
+  // Flash en el canvas del pentagrama también
+  const canvas = document.getElementById('staffCanvas');
+  if(canvas) {
+    canvas.style.animation = 'captureFlash 0.4s ease-out';
+    setTimeout(() => { canvas.style.animation = ''; }, 400);
+  }
+  
+  // Confetti de mini partículas saliendo del centro
+  spawnCaptureParticles();
+}
+
+function spawnCaptureParticles() {
+  const canvas = document.getElementById('staffCanvas');
+  if(!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  
+  for(let i = 0; i < 8; i++) {
+    const p = document.createElement('div');
+    p.style.cssText = `
+      position: fixed;
+      left: ${cx}px;
+      top: ${cy}px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: ${['#0a84ff','#5e5ce6','#ffd60a','#30d158'][i%4]};
+      pointer-events: none;
+      z-index: 2000;
+      animation: particle-fly ${0.6 + Math.random()*0.3}s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      --tx: ${(Math.random() - 0.5) * 200}px;
+      --ty: ${-Math.random() * 150 - 30}px;
+    `;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1000);
+  }
+}
+
+// Inyectar el CSS de las animaciones
+(function injectCaptureCSS() {
+  if(document.getElementById('captureAnimCSS')) return;
+  const style = document.createElement('style');
+  style.id = 'captureAnimCSS';
+  style.textContent = `
+    @keyframes captureBounce {
+      0%   { transform: scale(0.7); opacity: 0; box-shadow: 0 0 0 rgba(10,132,255,0); }
+      40%  { transform: scale(1.15); opacity: 1; box-shadow: 0 0 24px rgba(10,132,255,0.5); }
+      70%  { transform: scale(0.95); box-shadow: 0 0 12px rgba(10,132,255,0.3); }
+      100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 rgba(10,132,255,0); }
+    }
+    @keyframes captureFlash {
+      0%   { box-shadow: inset 0 0 0 0 rgba(10,132,255,0); }
+      40%  { box-shadow: inset 0 0 60px 0 rgba(10,132,255,0.25); }
+      100% { box-shadow: inset 0 0 0 0 rgba(10,132,255,0); }
+    }
+    @keyframes particle-fly {
+      0%   { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0.4); opacity: 0; }
+    }
+  `;
+  document.head.appendChild(style);
+})();
+
+// ── HOOKS: Conectar con las funciones existentes ──
+// Esperamos a que captureCurrentPattern exista y la envolvemos
+(function hookCapture() {
+  if(typeof captureCurrentPattern === 'undefined') {
+    setTimeout(hookCapture, 200);
+    return;
+  }
+  const original = captureCurrentPattern;
+  window.captureCurrentPattern = function(...args) {
+    const result = original.apply(this, args);
+    try {
+      playClickSound();
+      setTimeout(() => animateCaptureSuccess(), 50);
+    } catch(e) { console.warn('Capture FX:', e); }
+    return result;
+  };
+})();
+
+// Envolver playScore para mostrar metrónomo
+(function hookPlay() {
+  if(typeof playScore === 'undefined') {
+    setTimeout(hookPlay, 200);
+    return;
+  }
+  const originalPlay = playScore;
+  window.playScore = async function(...args) {
+    showMetronome();
+    return originalPlay.apply(this, args);
+  };
+  
+  const originalStop = stopScore;
+  window.stopScore = function(...args) {
+    hideMetronome();
+    return originalStop.apply(this, args);
+  };
+})();
+
+// Animar el metrónomo durante la reproducción (lo conectamos al state.activeMeasure tick)
+(function metronomeTick() {
+  let lastBeat = -1;
+  let rafId;
+  
+  function tick() {
+    if(!state || !state.playing) {
+      lastBeat = -1;
+      rafId = requestAnimationFrame(tick);
+      return;
+    }
+    
+    // Calcular el beat actual basado en el tiempo del audio context
+    const ctx = state.audioCtx;
+    if(!ctx || !state.playStartTime) {
+      rafId = requestAnimationFrame(tick);
+      return;
+    }
+    
+    const beatDur = 60 / state.bpm / 2; // 1/8 beat
+    const elapsed = ctx.currentTime - state.playStartTime;
+    const totalBeats = Math.floor(elapsed / beatDur);
+    
+    if(totalBeats !== lastBeat && totalBeats >= 0) {
+      lastBeat = totalBeats;
+      // Solo pulsa en beats fuertes (cada 2 subdivisiones = 1 tiempo)
+      if(totalBeats % 2 === 0) {
+        const beatInMeasure = totalBeats / 2;
+        const beatsPerMeasure = state.compas === '3/4' ? 3 : (state.compas === '2/4' ? 2 : (state.compas === '6/8' ? 2 : 4));
+        const isStrong = (beatInMeasure % beatsPerMeasure) === 0;
+        pulseMetronome(beatInMeasure, isStrong);
+      }
+    }
+    
+    rafId = requestAnimationFrame(tick);
+  }
+  
+  // Necesitamos guardar playStartTime en state
+  // Esperamos a que playScore exista y lo envolvemos
+  function setupPlayHook() {
+    if(typeof playScore === 'undefined') {
+      setTimeout(setupPlayHook, 200);
+      return;
+    }
+    
+    // Patch: en el primer scheduleLoop, marcar el startTime
+    const observer = setInterval(() => {
+      if(state && state.playing && state.audioCtx && !state.playStartTime) {
+        state.playStartTime = state.audioCtx.currentTime;
+      }
+      if(state && !state.playing) {
+        state.playStartTime = null;
+      }
+    }, 50);
+  }
+  
+  setupPlayHook();
+  rafId = requestAnimationFrame(tick);
+})();
+
+
+// ═══════════════════════════════════════════════════════════════
+//  1. FORMULARIO DE FEEDBACK
+// ═══════════════════════════════════════════════════════════════
+function showFeedback() {
+  const u = getUser?.();
+  
+  // Pausar la voz mientras está abierto el form (para no capturar mientras escriben)
+  const voiceWasActive = (typeof voiceActive !== 'undefined') && voiceActive;
+  if(voiceWasActive) {
+    try { toggleVoice(); } catch(e) {}
+  }
+  
+  const modal = document.createElement('div');
+  modal.id = 'feedbackModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s';
+  modal.innerHTML = `
+    <div style="background:linear-gradient(180deg,#1c1c28,#0a0a0f);border:1px solid rgba(255,255,255,0.1);border-radius:20px;max-width:480px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,0.6);overflow:hidden">
+      <div style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
+        <div>
+          <div style="font-size:32px;margin-bottom:8px">💬</div>
+          <h2 style="font-size:20px;font-weight:700;margin:0 0 4px;color:#fff">Tu opinión nos importa</h2>
+          <p style="margin:0;color:rgba(255,255,255,0.6);font-size:13px">3 preguntas rápidas, lleva 1 minuto</p>
+        </div>
+        <button onclick="document.getElementById('feedbackModal').remove()" style="width:32px;height:32px;border:none;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.6);border-radius:50%;cursor:pointer;font-size:16px">✕</button>
+      </div>
+      <div style="padding:20px 24px;max-height:60vh;overflow-y:auto">
+        <div style="margin-bottom:20px">
+          <label style="display:block;font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">¿Qué te confundió o costó entender?</label>
+          <textarea id="fbConfuse" rows="2" placeholder="Ej: no entendí qué hacía el botón loop..." style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;font-family:inherit;font-size:13px;box-sizing:border-box;resize:vertical"></textarea>
+        </div>
+        <div style="margin-bottom:20px">
+          <label style="display:block;font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">¿Qué feature usarías más?</label>
+          <textarea id="fbFeature" rows="2" placeholder="Ej: capturar con voz mientras dirijo a mis alumnos..." style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;font-family:inherit;font-size:13px;box-sizing:border-box;resize:vertical"></textarea>
+        </div>
+        <div style="margin-bottom:20px">
+          <label style="display:block;font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">¿Pagarías por esta app? ¿Cuánto?</label>
+          <textarea id="fbPay" rows="2" placeholder="Ej: sí, $5000 al mes me parece justo / no, sólo si tuviera X..." style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;font-family:inherit;font-size:13px;box-sizing:border-box;resize:vertical"></textarea>
+        </div>
+        <div style="margin-bottom:20px">
+          <label style="display:block;font-size:13px;font-weight:600;color:#fff;margin-bottom:8px">¿Cómo calificarías la app del 1 al 5?</label>
+          <div id="fbStars" style="display:flex;gap:6px;justify-content:center">
+            ${[1,2,3,4,5].map(n => `<button onclick="window.__fbRating=${n};document.querySelectorAll('#fbStars button').forEach((b,i)=>b.style.color = i < ${n} ? '#ffd60a' : 'rgba(255,255,255,0.2)')" style="background:transparent;border:none;font-size:32px;cursor:pointer;color:rgba(255,255,255,0.2);transition:color .15s;padding:4px">★</button>`).join('')}
+          </div>
+        </div>
+        <div style="margin-bottom:8px">
+          <label style="display:block;font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">Tu email (opcional, para responderte)</label>
+          <input type="email" id="fbEmail" value="${u?.email || ''}" placeholder="tu@email.com" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;font-family:inherit;font-size:13px;box-sizing:border-box"/>
+        </div>
+      </div>
+      <div style="padding:16px 24px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px">
+        <button onclick="document.getElementById('feedbackModal').remove()" style="flex:1;padding:11px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:rgba(255,255,255,0.85);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="submitFeedback()" id="fbSubmit" style="flex:1;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(10,132,255,0.3)">Enviar feedback</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+}
+
+async function submitFeedback() {
+  const data = {
+    confuse: document.getElementById('fbConfuse').value.trim(),
+    feature: document.getElementById('fbFeature').value.trim(),
+    pay: document.getElementById('fbPay').value.trim(),
+    rating: window.__fbRating || 0,
+    email: document.getElementById('fbEmail').value.trim(),
+    timestamp: new Date().toISOString(),
+    plan: getUser?.()?.plan || 'free',
+    userAgent: navigator.userAgent.substring(0, 100),
+  };
+  
+  if(!data.confuse && !data.feature && !data.pay && !data.rating) {
+    if(typeof notify === 'function') notify('Por favor completá al menos un campo', 'warning');
+    return;
+  }
+  
+  const btn = document.getElementById('fbSubmit');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+  btn.style.opacity = '0.7';
+  
+  try {
+    const res = await fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    
+    if(res.ok) {
+      document.getElementById('feedbackModal').remove();
+      if(typeof notify === 'function') notify('¡Gracias por tu feedback! 🙏', 'success', 4000);
+    } else {
+      throw new Error('Server error');
+    }
+  } catch(e) {
+    // Fallback: guardar en localStorage si la API no anda
+    const stored = JSON.parse(localStorage.getItem('pending_feedback') || '[]');
+    stored.push(data);
+    localStorage.setItem('pending_feedback', JSON.stringify(stored));
+    document.getElementById('feedbackModal').remove();
+    if(typeof notify === 'function') notify('Feedback guardado, se enviará automáticamente más tarde', 'info', 4000);
+  }
+}
+
+// Botón flotante para feedback
+function injectFeedbackButton() {
+  if(document.getElementById('feedbackFloatBtn')) return;
+  const btn = document.createElement('button');
+  btn.id = 'feedbackFloatBtn';
+  btn.title = 'Dejá tu opinión';
+  btn.onclick = showFeedback;
+  btn.style.cssText = 'position:fixed;bottom:14px;right:14px;width:34px;height:34px;border-radius:50%;background:rgba(10,132,255,0.85);color:#fff;border:1px solid rgba(255,255,255,0.1);font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(10,132,255,0.3);z-index:900;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:all .15s;backdrop-filter:blur(10px);opacity:0.85';
+  btn.innerHTML = '💬';
+  btn.onmouseover = () => { btn.style.transform = 'scale(1.15)'; btn.style.opacity = '1'; };
+  btn.onmouseout = () => { btn.style.transform = 'scale(1)'; btn.style.opacity = '0.85'; };
+  document.body.appendChild(btn);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  2. ONBOARDING (3 pantallas explicando la app)
+// ═══════════════════════════════════════════════════════════════
+function showOnboarding() {
+  if(localStorage.getItem('onboarding_done')) return;
+  
+  let currentStep = 0;
+  const steps = [
+    {
+      icon: '✋',
+      title: 'Mostrá tu mano a la cámara',
+      desc: 'La app detecta cuántos dedos levantás. Cada combinación genera un patrón rítmico diferente.',
+      visual: `<div style="font-size:100px;animation:tutHand 1.5s infinite;text-align:center">✋</div>
+               <div style="display:flex;gap:6px;justify-content:center;margin-top:14px">
+                 ${[1,1,1,0,0].map((on,i)=>`<div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;${on?'background:#0a84ff;color:#fff;box-shadow:0 0 12px rgba(10,132,255,0.5)':'background:rgba(10,132,255,0.1);color:#0a84ff;border:2px solid rgba(10,132,255,0.3)'}">${i+1}</div>`).join('')}
+               </div>`
+    },
+    {
+      icon: '🥁',
+      title: 'Capturá ritmos con voz o gesto',
+      desc: 'Decí "Ya" o clickeá Capturar. La app guarda el patrón y lo agrega al pentagrama.',
+      visual: `<div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+                 <div style="font-family:monospace;font-size:18px;color:#0a84ff;font-style:italic">"Ya"</div>
+                 <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#30d158,#5ec8ca);display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;box-shadow:0 0 30px rgba(48,209,88,0.5);animation:tutPop 0.4s both">✓</div>
+                 <div style="background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.08);padding:8px;width:240px">
+                   <div style="display:flex;gap:3px">
+                     ${[1,0,1,0,1,1,0,1].map(on=>`<div style="flex:1;height:18px;border-radius:3px;${on?'background:linear-gradient(135deg,#0a84ff,#5e5ce6)':'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)'}"></div>`).join('')}
+                   </div>
+                 </div>
+               </div>`
+    },
+    {
+      icon: '🎵',
+      title: 'Componé multi-pista y reproducí',
+      desc: 'Combiná hasta 6 instrumentos en simultáneo. Reproducí, exportá audio o compartí tu creación.',
+      visual: `<div style="background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.08);padding:10px;width:260px">
+                 ${['#ff6b6b','#c89a4a','#aaa'].map((c,row)=>`
+                   <div style="display:flex;align-items:center;gap:8px;${row<2?'margin-bottom:6px':''}">
+                     <div style="width:42px;color:${c};font-weight:600;font-size:10px">${['Conga','Clave','Camp'][row]}</div>
+                     <div style="display:flex;gap:2px;flex:1">
+                       ${[
+                         [1,0,1,0,1,1,0,1],
+                         [0,1,0,1,0,0,1,0],
+                         [1,0,0,1,1,0,0,0]
+                       ][row].map((on,i)=>`<div style="flex:1;height:14px;border-radius:2px;${on?'background:linear-gradient(135deg,#0a84ff,#5e5ce6);animation:tutGlow 1.5s '+(i*0.1)+'s infinite':'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)'}"></div>`).join('')}
+                     </div>
+                   </div>`).join('')}
+               </div>`
+    }
+  ];
+  
+  const modal = document.createElement('div');
+  modal.id = 'onboardingModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:5500;background:rgba(0,0,0,0.9);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s';
+  
+  function render() {
+    const s = steps[currentStep];
+    modal.innerHTML = `
+      <style>
+        @keyframes tutHand { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08) rotate(-5deg)} }
+        @keyframes tutPop { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+        @keyframes tutGlow { 0%,100%{box-shadow:0 0 4px rgba(10,132,255,0.4)} 50%{box-shadow:0 0 16px rgba(10,132,255,0.8)} }
+      </style>
+      <div style="background:linear-gradient(180deg,#1c1c28,#0a0a0f);border:1px solid rgba(255,255,255,0.1);border-radius:20px;max-width:440px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,0.6);overflow:hidden">
+        <div style="padding:28px 24px 0;text-align:center">
+          <div style="font-size:48px;margin-bottom:8px">${s.icon}</div>
+          <h2 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#fff;letter-spacing:-0.3px">${s.title}</h2>
+          <p style="margin:0 0 20px;color:rgba(255,255,255,0.65);font-size:14px;line-height:1.5">${s.desc}</p>
+        </div>
+        <div style="background:radial-gradient(circle at center,rgba(10,132,255,0.06),transparent 70%);padding:24px;min-height:180px;display:flex;align-items:center;justify-content:center">
+          ${s.visual}
+        </div>
+        <div style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div style="display:flex;gap:6px">
+            ${steps.map((_,i) => `<div style="width:${i===currentStep?'24':'8'}px;height:8px;border-radius:4px;background:${i===currentStep?'#0a84ff':'rgba(255,255,255,0.15)'};transition:width .3s"></div>`).join('')}
+          </div>
+          <div style="display:flex;gap:8px">
+            ${currentStep > 0 ? '<button id="obBack" style="padding:9px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:rgba(255,255,255,0.85);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">Atrás</button>' : '<button id="obSkip" style="padding:9px 16px;border-radius:10px;border:none;background:transparent;color:rgba(255,255,255,0.4);font-size:13px;cursor:pointer;font-family:inherit">Saltar</button>'}
+            <button id="obNext" style="padding:9px 20px;border-radius:10px;border:none;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(10,132,255,0.3)">${currentStep === steps.length - 1 ? '¡Empezar! →' : 'Siguiente →'}</button>
+          </div>
+        </div>
+      </div>
+    `;
+    modal.querySelector('#obNext').onclick = () => {
+      if(currentStep < steps.length - 1) { currentStep++; render(); }
+      else { 
+        localStorage.setItem('onboarding_done', '1'); 
+        modal.remove();
+        // Lanzar el product tour automáticamente después del onboarding
+        setTimeout(() => { try { startProductTour(); } catch(e){ console.warn('tour:', e); } }, 500);
+      }
+    };
+    modal.querySelector('#obBack')?.addEventListener('click', () => { currentStep--; render(); });
+    modal.querySelector('#obSkip')?.addEventListener('click', () => { localStorage.setItem('onboarding_done', '1'); modal.remove(); });
+  }
+  
+  render();
+  document.body.appendChild(modal);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  4. COMPARTIR COMPOSICIÓN POR LINK
+// ═══════════════════════════════════════════════════════════════
+function shareComposition() {
+  if(!state || !state.tracks) { notify('No hay nada para compartir', 'warning'); return; }
+  
+  const totalCompases = Object.values(state.tracks).reduce((max, t) => Math.max(max, t.length), 0);
+  if(totalCompases === 0) {
+    notify('Capturá al menos un compás antes de compartir', 'warning');
+    return;
+  }
+  
+  // Serializar la sesión actual de forma compacta
+  const payload = {
+    v: 1,
+    bpm: state.bpm,
+    timeSig: state.timeSig,
+    tracks: {},
+  };
+  
+  // Solo guardar pistas con patrones
+  for(const [id, track] of Object.entries(state.tracks)) {
+    if(track && track.length > 0) {
+      payload.tracks[id] = track.map(c => c?.pattern || []);
+    }
+  }
+  
+  // Codificar a base64 URL-safe
+  const json = JSON.stringify(payload);
+  const compressed = btoa(unescape(encodeURIComponent(json)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  
+  const url = `${location.origin}/app/?share=${compressed}`;
+  
+  // Modal para compartir
+  const modal = document.createElement('div');
+  modal.id = 'shareModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s';
+  modal.innerHTML = `
+    <div style="background:linear-gradient(180deg,#1c1c28,#0a0a0f);border:1px solid rgba(255,255,255,0.1);border-radius:20px;max-width:440px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,0.6);overflow:hidden">
+      <div style="padding:24px 24px 0;text-align:center">
+        <div style="font-size:40px;margin-bottom:8px">🔗</div>
+        <h2 style="font-size:20px;font-weight:700;margin:0 0 6px;color:#fff">Compartí tu composición</h2>
+        <p style="margin:0 0 20px;color:rgba(255,255,255,0.6);font-size:13px">${totalCompases} compás${totalCompases===1?'':'es'} en ${Object.keys(payload.tracks).length} pista${Object.keys(payload.tracks).length===1?'':'s'}</p>
+      </div>
+      <div style="padding:0 24px 20px">
+        <div style="display:flex;gap:6px;margin-bottom:14px">
+          <input id="shareUrl" type="text" readonly value="${url}" style="flex:1;padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#0a84ff;font-family:monospace;font-size:11px;box-sizing:border-box"/>
+          <button onclick="copyShareUrl()" id="shareCopyBtn" style="padding:10px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Copiar</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <a href="https://wa.me/?text=${encodeURIComponent('Mirá esta composición que hice en PercuSignal: ' + url)}" target="_blank" style="padding:10px;border-radius:10px;background:rgba(48,209,88,0.15);border:1px solid rgba(48,209,88,0.3);color:#30d158;text-decoration:none;font-size:13px;font-weight:600;text-align:center">WhatsApp</a>
+          <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent('Mirá esta composición que hice en PercuSignal: ' + url)}" target="_blank" style="padding:10px;border-radius:10px;background:rgba(10,132,255,0.15);border:1px solid rgba(10,132,255,0.3);color:#0a84ff;text-decoration:none;font-size:13px;font-weight:600;text-align:center">Twitter / X</a>
+        </div>
+      </div>
+      <div style="padding:14px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center">
+        <button onclick="document.getElementById('shareModal').remove()" style="padding:8px 18px;border-radius:8px;border:none;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.85);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">Cerrar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+}
+
+function copyShareUrl() {
+  const input = document.getElementById('shareUrl');
+  input.select();
+  document.execCommand('copy');
+  const btn = document.getElementById('shareCopyBtn');
+  btn.textContent = '✓ Copiado';
+  btn.style.background = 'linear-gradient(135deg,#30d158,#5ec8ca)';
+  setTimeout(() => { btn.textContent = 'Copiar'; btn.style.background = 'linear-gradient(135deg,#0a84ff,#5e5ce6)'; }, 2000);
+}
+
+// Detectar al cargar si hay un link de compartir
+function checkShareLink() {
+  const params = new URLSearchParams(location.search);
+  const shared = params.get('share');
+  if(!shared) return;
+  
+  try {
+    const decoded = atob(shared.replace(/-/g, '+').replace(/_/g, '/'));
+    const json = decodeURIComponent(escape(decoded));
+    const payload = JSON.parse(json);
+    
+    // Esperar a que la app esté lista
+    setTimeout(() => {
+      if(!state || !state.tracks) return;
+      
+      state.bpm = payload.bpm || 100;
+      state.timeSig = payload.timeSig || '4/4';
+      
+      // Restaurar pistas
+      for(const [id, patterns] of Object.entries(payload.tracks || {})) {
+        state.tracks[id] = patterns.map(p => ({ pattern: p }));
+      }
+      
+      // Limpiar URL
+      history.replaceState({}, '', '/app/');
+      
+      // Re-render
+      if(typeof rebuildScoreDisplay === 'function') rebuildScoreDisplay();
+      
+      if(typeof notify === 'function') notify('¡Composición compartida cargada! 🎵', 'success', 4000);
+    }, 800);
+  } catch(e) {
+    console.warn('Share link error:', e);
+    if(typeof notify === 'function') notify('No se pudo cargar la composición compartida', 'error');
+  }
+}
+
+
+// === TUTORIALES COMPLETOS (8) - reemplaza el TUTORIALS existente ===
+
+const TUTORIALS = {
+  voice: {
+    title: 'Captura por voz',
+    subtitle: 'Capturá ritmos sin tocar la pantalla',
+    duration: 12,
+    scenes: [
+      {
+        time: 0, duration: 3, subtitle: '1. Activá Voz y la app empieza a escuchar',
+        render: () => `<div style="display:flex;flex-direction:column;align-items:center;gap:18px">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 20px;border-radius:999px;background:linear-gradient(135deg,#ff453a,#bf5af2);color:#fff;box-shadow:0 0 24px rgba(255,69,58,0.5);animation:tutPulse 1s infinite">
+            <span style="width:10px;height:10px;background:#fff;border-radius:50%;animation:tutBlink 1s infinite"></span>
+            <span style="font-size:16px;font-weight:600">Escuchando</span>
+          </div>
+          <div style="display:flex;gap:5px;align-items:flex-end;height:24px">
+            ${[30,60,90,50,70].map((h,i)=>`<div style="width:4px;background:linear-gradient(180deg,#ff453a,#bf5af2);border-radius:2px;animation:tutBar 0.8s infinite;animation-delay:${i*0.1}s;height:${h}%"></div>`).join('')}
+          </div></div>`
+      },
+      {
+        time: 3, duration: 5, subtitle: '2. Decí "Ya" o cualquier comando',
+        render: () => `<div style="display:flex;flex-direction:column;gap:6px;max-width:300px;width:100%">
+          ${[['"Ya"','Capturar','#0a84ff'],['"Borra"','Borrar','#ff453a'],['"Play"','Tocar','#30d158'],['"Stop"','Detener','#ff9f0a']].map((c,i)=>`
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;animation:tutSlide 0.4s ${i*0.1}s both">
+              <span style="color:${c[2]};font-weight:700;font-size:13px;font-family:monospace">${c[0]}</span>
+              <span style="color:rgba(255,255,255,0.4);font-size:12px">→</span>
+              <span style="color:#fff;font-size:13px">${c[1]}</span>
+            </div>`).join('')}
+        </div>`
+      },
+      {
+        time: 8, duration: 4, subtitle: '3. Compás capturado',
+        render: () => `<div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+          <div style="font-family:monospace;font-size:20px;color:#0a84ff;font-style:italic">"Ya"</div>
+          <div style="width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#30d158,#5ec8ca);display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;box-shadow:0 0 30px rgba(48,209,88,0.5);animation:tutPop 0.4s both">✓</div>
+          <div style="color:rgba(255,255,255,0.7);font-size:13px">Manos libres para hacer otras señas</div>
+        </div>`
+      },
+    ]
+  },
+
+  gesture: {
+    title: 'Captura por gesto',
+    subtitle: 'Detectá ritmos mostrando los dedos',
+    duration: 12,
+    scenes: [
+      {
+        time: 0, duration: 3, subtitle: '1. Activá la cámara',
+        render: () => `<div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+          <div style="width:160px;height:110px;background:linear-gradient(180deg,#1a1a28,#0a0a14);border-radius:12px;border:2px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center"><div style="font-size:32px;opacity:0.4">📷</div></div>
+          <button style="padding:10px 22px;border-radius:999px;border:none;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(10,132,255,0.4);animation:tutPulse 1s infinite">Activar cámara</button>
+        </div>`
+      },
+      {
+        time: 3, duration: 4, subtitle: '2. Mostrá los dedos',
+        render: () => `<div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+          <div style="font-size:120px;filter:drop-shadow(0 0 30px rgba(10,132,255,0.4));animation:tutHand 1.5s infinite">✋</div>
+          <div style="display:flex;gap:6px">
+            ${[1,1,1,0,0].map((on,i)=>`<div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;${on?'background:#0a84ff;color:#fff;box-shadow:0 0 16px rgba(10,132,255,0.6);animation:tutPop 0.4s '+(i*0.15)+'s both':'background:rgba(10,132,255,0.1);color:#0a84ff;border:2px solid rgba(10,132,255,0.3)'}">${i+1}</div>`).join('')}
+          </div></div>`
+      },
+      {
+        time: 7, duration: 5, subtitle: '3. Click Capturar → compás listo',
+        render: () => `<div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+          <button style="padding:10px 22px;border-radius:999px;border:none;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;font-size:13px;font-weight:600;animation:tutPulse 1s infinite"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Capturar</button>
+          <div style="background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.08);padding:12px;max-width:320px;width:100%;animation:tutSlide 0.4s 0.5s both">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:48px;color:#ff6b6b;font-weight:600;font-size:12px">Conga</div>
+              <div style="display:flex;gap:3px;flex:1">
+                ${[1,0,1,0,1,1,0,1].map(on=>`<div style="flex:1;height:22px;border-radius:5px;${on?'background:linear-gradient(135deg,#0a84ff,#5e5ce6);box-shadow:0 0 8px rgba(10,132,255,0.4)':'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)'}"></div>`).join('')}
+              </div></div></div></div>`
+      },
+    ]
+  },
+
+  insert: {
+    title: 'Insertar compás',
+    subtitle: 'Agregá compases en medio sin romper la composición',
+    duration: 12,
+    scenes: [
+      {
+        time: 0, duration: 4, subtitle: '1. Hacé click entre dos compases del pentagrama',
+        render: () => `<div style="background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.08);padding:14px;max-width:340px;width:100%">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <div style="width:42px;color:#ff6b6b;font-weight:600;font-size:11px">Conga</div>
+            <div style="display:flex;gap:3px;flex:1;position:relative">
+              <div style="flex:1;height:22px;border-radius:4px;background:linear-gradient(135deg,#0a84ff,#5e5ce6)"></div>
+              <div style="flex:1;height:22px;border-radius:4px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)"></div>
+              <div style="position:absolute;left:24%;top:-6px;bottom:-6px;width:3px;background:#ffd60a;border-radius:2px;box-shadow:0 0 12px rgba(255,214,10,0.8);animation:tutPulse 0.8s infinite"></div>
+              <div style="flex:1;height:22px;border-radius:4px;background:linear-gradient(135deg,#0a84ff,#5e5ce6)"></div>
+              <div style="flex:1;height:22px;border-radius:4px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)"></div>
+            </div></div>
+          <div style="color:#ffd60a;font-size:11px;text-align:center;margin-top:6px;animation:tutPulse 1s infinite">↑ Click acá entre compases</div>
+        </div>`
+      },
+      {
+        time: 4, duration: 4, subtitle: '2. Aparece el banner amarillo',
+        render: () => `<div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+          <div style="background:linear-gradient(135deg,rgba(255,159,10,0.18),rgba(255,214,10,0.18));border:1px solid rgba(255,214,10,0.4);border-radius:12px;padding:12px 18px;display:flex;align-items:center;gap:10px;color:#ffd60a;animation:tutSlide 0.4s both">
+            <span style="font-size:14px;font-weight:500">Mostrá la seña → capturá <strong>compás 2</strong></span>
+            <button style="padding:5px 12px;border-radius:999px;background:#0a84ff;color:#fff;border:none;font-size:11px;font-weight:600">✓ Aquí</button>
+          </div>
+          <div style="color:rgba(255,255,255,0.5);font-size:12px;max-width:280px;text-align:center">Capturá el nuevo patrón con voz o gesto</div>
+        </div>`
+      },
+      {
+        time: 8, duration: 4, subtitle: '3. Se inserta y los demás corren',
+        render: () => `<div style="background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.08);padding:14px;max-width:340px;width:100%">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:42px;color:#ff6b6b;font-weight:600;font-size:11px">Conga</div>
+            <div style="display:flex;gap:3px;flex:1">
+              <div style="flex:1;height:22px;border-radius:4px;background:linear-gradient(135deg,#0a84ff,#5e5ce6)"></div>
+              <div style="flex:1;height:22px;border-radius:4px;background:linear-gradient(135deg,#30d158,#5ec8ca);box-shadow:0 0 12px rgba(48,209,88,0.5);animation:tutPop 0.5s both"></div>
+              <div style="flex:1;height:22px;border-radius:4px;background:linear-gradient(135deg,#0a84ff,#5e5ce6)"></div>
+              <div style="flex:1;height:22px;border-radius:4px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)"></div>
+            </div></div>
+          <div style="color:#30d158;font-size:11px;text-align:center;margin-top:8px;animation:tutSlide 0.4s 0.3s both">↑ Nuevo compás insertado en posición 2</div>
+        </div>`
+      },
+    ]
+  },
+
+  loop: {
+    title: 'Loop por pista',
+    subtitle: 'Hacé que un patrón se repita solo',
+    duration: 11,
+    scenes: [
+      {
+        time: 0, duration: 3, subtitle: 'Cada pista tiene un botón loop ↻',
+        render: () => `<div style="background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.08);padding:14px;max-width:320px;width:100%">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:48px;color:#ff6b6b;font-weight:600;font-size:12px">Conga</div>
+            <button style="padding:4px 10px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);font-size:11px;display:flex;align-items:center;gap:4px"><span>↻</span><span>Loop</span></button>
+            <button style="padding:4px 10px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);font-size:11px">M</button>
+          </div></div>`
+      },
+      {
+        time: 3, duration: 4, subtitle: 'Click → loop activo (color azul)',
+        render: () => `<div style="background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.08);padding:14px;max-width:320px;width:100%">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:48px;color:#ff6b6b;font-weight:600;font-size:12px">Conga</div>
+            <button style="padding:4px 10px;border-radius:999px;background:linear-gradient(135deg,#0a84ff,#5e5ce6);border:1px solid #0a84ff;color:#fff;font-size:11px;display:flex;align-items:center;gap:4px;box-shadow:0 0 12px rgba(10,132,255,0.5);animation:tutPop 0.4s both"><span style="animation:tutSpin 1.5s linear infinite;display:inline-block">↻</span><span>Loop</span></button>
+            <button style="padding:4px 10px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);font-size:11px">M</button>
+          </div></div>`
+      },
+      {
+        time: 7, duration: 4, subtitle: 'El patrón se repite en cada compás nuevo',
+        render: () => `<div style="background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.08);padding:14px;max-width:340px;width:100%">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:48px;color:#ff6b6b;font-weight:600;font-size:11px;display:flex;align-items:center;gap:4px">Conga <span style="font-size:10px;color:#0a84ff;animation:tutSpin 1.5s linear infinite">↻</span></div>
+            <div style="display:flex;gap:3px;flex:1">
+              ${[1,0,1,0,1,0,1,0].map((on,i)=>`<div style="flex:1;height:22px;border-radius:4px;${on?'background:linear-gradient(135deg,#0a84ff,#5e5ce6);animation:tutGlow 1.5s '+(i*0.1)+'s infinite':'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)'}"></div>`).join('')}
+              ${[1,0,1,0,1,0,1,0].map((on,i)=>`<div style="flex:1;height:22px;border-radius:4px;${on?'background:linear-gradient(135deg,#0a84ff,#5e5ce6);opacity:0.6':'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)'}"></div>`).join('')}
+            </div></div>
+          <div style="color:rgba(255,255,255,0.5);font-size:11px;text-align:center;margin-top:8px">Ahorrás trabajo en pistas repetitivas</div>
+        </div>`
+      },
+    ]
+  },
+
+  mute: {
+    title: 'Mute por pista',
+    subtitle: 'Silenciá una pista sin borrarla',
+    duration: 10,
+    scenes: [
+      {
+        time: 0, duration: 3, subtitle: 'Click en M de la pista',
+        render: () => `<div style="background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.08);padding:14px;max-width:340px;width:100%">
+          ${['#ff6b6b','#c89a4a','#aaa'].map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:${i<2?'8px':'0'}">
+            <div style="width:48px;color:${c};font-weight:600;font-size:11px">${['Conga','Clave','Camp'][i]}</div>
+            <button style="padding:3px 9px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);font-size:10px;${i===1?'animation:tutPulse 1s infinite;border-color:#ffd60a;color:#ffd60a':''}">M</button>
+            <div style="flex:1;height:18px;background:rgba(255,255,255,0.04);border-radius:4px"></div>
+          </div>`).join('')}
+        </div>`
+      },
+      {
+        time: 3, duration: 3, subtitle: 'La pista se silencia (no se borra)',
+        render: () => `<div style="background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.08);padding:14px;max-width:340px;width:100%">
+          ${['#ff6b6b','#c89a4a','#aaa'].map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:${i<2?'8px':'0'};${i===1?'opacity:0.35;animation:tutFade 0.4s both':''}">
+            <div style="width:48px;color:${c};font-weight:600;font-size:11px">${['Conga','Clave','Camp'][i]}</div>
+            <button style="padding:3px 9px;border-radius:999px;${i===1?'background:#ff453a;border:1px solid #ff453a;color:#fff':'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6)'};font-size:10px">M</button>
+            <div style="flex:1;height:18px;background:rgba(255,255,255,0.04);border-radius:4px"></div>
+          </div>`).join('')}
+        </div>`
+      },
+      {
+        time: 6, duration: 4, subtitle: 'Click otra vez para reactivar',
+        render: () => `<div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <button style="padding:5px 12px;border-radius:999px;background:#ff453a;border:1px solid #ff453a;color:#fff;font-size:12px;font-weight:600">M</button>
+            <span style="color:rgba(255,255,255,0.4);font-size:18px">→</span>
+            <button style="padding:5px 12px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);font-size:12px;font-weight:600">M</button>
+          </div>
+          <div style="color:rgba(255,255,255,0.6);font-size:12px;text-align:center;max-width:300px">Útil para probar cómo suena sin una pista</div>
+        </div>`
+      },
+    ]
+  },
+
+  delete: {
+    title: 'Eliminar compás',
+    subtitle: 'Borrá un compás individual',
+    duration: 10,
+    scenes: [
+      {
+        time: 0, duration: 3, subtitle: 'Pasá el mouse sobre el compás',
+        render: () => `<div style="background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.08);padding:14px;max-width:340px;width:100%">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:48px;color:#ff6b6b;font-weight:600;font-size:11px">Conga</div>
+            <div style="display:flex;gap:3px;flex:1">
+              <div style="flex:1;height:24px;border-radius:4px;background:linear-gradient(135deg,#0a84ff,#5e5ce6)"></div>
+              <div style="flex:1;height:24px;border-radius:4px;background:linear-gradient(135deg,#0a84ff,#5e5ce6);position:relative;outline:2px solid rgba(255,214,10,0.6);outline-offset:2px;animation:tutPulse 1s infinite">
+                <div style="position:absolute;top:-22px;right:-4px;background:#ff453a;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer">×</div>
+              </div>
+              <div style="flex:1;height:24px;border-radius:4px;background:linear-gradient(135deg,#0a84ff,#5e5ce6)"></div>
+            </div></div></div>`
+      },
+      {
+        time: 3, duration: 3, subtitle: 'Click en la × roja',
+        render: () => `<div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+          <div style="width:48px;height:48px;border-radius:50%;background:#ff453a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;animation:tutPulse 0.8s infinite;box-shadow:0 0 30px rgba(255,69,58,0.5)">×</div>
+          <div style="color:rgba(255,255,255,0.6);font-size:12px">Confirma el borrado</div>
+        </div>`
+      },
+      {
+        time: 6, duration: 4, subtitle: 'El compás se elimina, los demás corren',
+        render: () => `<div style="background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.08);padding:14px;max-width:340px;width:100%">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:48px;color:#ff6b6b;font-weight:600;font-size:11px">Conga</div>
+            <div style="display:flex;gap:3px;flex:1">
+              <div style="flex:1;height:24px;border-radius:4px;background:linear-gradient(135deg,#0a84ff,#5e5ce6);animation:tutPop 0.4s both"></div>
+              <div style="flex:1;height:24px;border-radius:4px;background:linear-gradient(135deg,#0a84ff,#5e5ce6);animation:tutPop 0.4s 0.1s both"></div>
+              <div style="flex:1;height:24px;border-radius:4px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)"></div>
+            </div></div></div>`
+      },
+    ]
+  },
+
+  export: {
+    title: 'Exportar audio',
+    subtitle: 'Descargá tu composición como archivo WAV',
+    duration: 11,
+    scenes: [
+      {
+        time: 0, duration: 3, subtitle: 'Click en <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar',
+        render: () => `<button style="padding:12px 24px;border-radius:999px;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;border:none;font-size:14px;font-weight:600;animation:tutPulse 1s infinite;box-shadow:0 8px 24px rgba(10,132,255,0.4)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar</button>`
+      },
+      {
+        time: 3, duration: 4, subtitle: 'La app renderiza el audio',
+        render: () => `<div style="display:flex;flex-direction:column;align-items:center;gap:14px;max-width:300px;width:100%">
+          <div style="font-size:36px">🎵</div>
+          <div style="color:#fff;font-size:14px;font-weight:600">Renderizando audio...</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:12px">Procesando 8 compases</div>
+          <div style="width:100%;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden">
+            <div style="height:100%;background:linear-gradient(90deg,#0a84ff,#5e5ce6);animation:tutLoadBar 3s ease-out forwards"></div>
+          </div></div>`
+      },
+      {
+        time: 7, duration: 4, subtitle: 'Se descarga como percusignal_xxx.wav',
+        render: () => `<div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;background:linear-gradient(135deg,rgba(48,209,88,0.18),rgba(94,200,202,0.18));border:1px solid rgba(48,209,88,0.4);border-radius:12px;color:#30d158;animation:tutPop 0.4s both">
+            <span style="font-size:24px">✓</span>
+            <span style="font-size:13px;font-weight:600">percusignal_2026-05-26.wav</span>
+          </div>
+          <div style="color:rgba(255,255,255,0.6);font-size:11px;max-width:280px;text-align:center">Calidad CD 44.1kHz · Lo abrís en cualquier editor</div>
+        </div>`
+      },
+    ]
+  },
+
+  bpm: {
+    title: 'BPM y Compás',
+    subtitle: 'Cambiá velocidad y métrica',
+    duration: 11,
+    scenes: [
+      {
+        time: 0, duration: 4, subtitle: 'Slider BPM o presets de velocidad',
+        render: () => `<div style="display:flex;flex-direction:column;gap:14px;max-width:320px;width:100%">
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:rgba(255,255,255,0.04);border-radius:10px;border:1px solid rgba(255,255,255,0.08)">
+            <button style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.08);border:none;color:#fff;font-weight:700">−</button>
+            <input type="range" min="40" max="240" value="100" style="flex:1;accent-color:#0a84ff" disabled/>
+            <div style="font-family:monospace;color:#0a84ff;font-weight:700;font-size:16px;min-width:40px">100</div>
+            <button style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.08);border:none;color:#fff;font-weight:700">+</button>
+          </div>
+          <div style="display:flex;gap:4px">
+            ${[60,80,100,120,160].map(b=>`<div style="flex:1;padding:6px;background:${b===100?'#0a84ff':'rgba(255,255,255,0.04)'};color:${b===100?'#fff':'rgba(255,255,255,0.6)'};border-radius:6px;text-align:center;font-size:11px;font-weight:600">${b}</div>`).join('')}
+          </div>
+        </div>`
+      },
+      {
+        time: 4, duration: 3, subtitle: 'Cambiá entre 2/4, 3/4, 4/4',
+        render: () => `<div style="display:flex;gap:8px">
+          ${['2/4','3/4','4/4'].map((t,i)=>`<div style="padding:14px 22px;border-radius:12px;background:${i===2?'linear-gradient(135deg,#0a84ff,#5e5ce6)':'rgba(255,255,255,0.04)'};color:${i===2?'#fff':'rgba(255,255,255,0.7)'};border:1px solid ${i===2?'#0a84ff':'rgba(255,255,255,0.1)'};font-family:monospace;font-size:18px;font-weight:700;${i===2?'box-shadow:0 0 20px rgba(10,132,255,0.4);animation:tutPop 0.4s '+(i*0.15)+'s both':''}">${t}</div>`).join('')}
+        </div>`
+      },
+      {
+        time: 7, duration: 4, subtitle: 'El pentagrama se ajusta automáticamente',
+        render: () => `<div style="background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.08);padding:14px;max-width:340px;width:100%">
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:8px">
+            <span>4/4 — 8 subdivisiones por compás</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:48px;color:#ff6b6b;font-weight:600;font-size:11px">Conga</div>
+            <div style="display:flex;gap:3px;flex:1">
+              ${[1,0,1,0,1,1,0,1].map(on=>`<div style="flex:1;height:22px;border-radius:4px;${on?'background:linear-gradient(135deg,#0a84ff,#5e5ce6)':'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)'}"></div>`).join('')}
+            </div></div></div>`
+      },
+    ]
+  },
+};
+
+// Menu de todos los tutoriales
+function showTutorialMenu() {
+  const modal = document.createElement('div');
+  modal.id = 'tutorialMenuModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s';
+
+  const items = [
+    {id:'__tour',  icon:'🗺️', title:'Tour completo (paso a paso)'},
+    {id:'gesture', icon:'✋', title:'Captura por gesto'},
+    {id:'voice',   icon:'🎙', title:'Captura por voz'},
+    {id:'insert',  icon:'➕', title:'Insertar compás'},
+    {id:'delete',  icon:'🗑', title:'Eliminar compás'},
+    {id:'loop',    icon:'↻',  title:'Loop por pista'},
+    {id:'mute',    icon:'🔇', title:'Mute por pista'},
+    {id:'bpm',     icon:'⏱', title:'BPM y compás'},
+    {id:'export',  icon:'🎵', title:'Exportar audio'},
+  ];
+
+  modal.innerHTML = `
+    <div style="background:linear-gradient(180deg,#1c1c28,#0a0a0f);border:1px solid rgba(255,255,255,0.1);border-radius:20px;max-width:520px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,0.6);overflow:hidden">
+      <div style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+        <div>
+          <h2 style="font-size:20px;font-weight:600;margin:0 0 4px;color:#fff;letter-spacing:-0.3px">Tutoriales</h2>
+          <p style="margin:0;color:rgba(255,255,255,0.5);font-size:13px">Aprendé cada feature en menos de 15 segundos</p>
+        </div>
+        <button onclick="document.getElementById('tutorialMenuModal').remove()" style="width:32px;height:32px;border:none;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.6);border-radius:50%;cursor:pointer;font-size:16px;flex-shrink:0">✕</button>
+      </div>
+      <div style="padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${items.map(item => `
+          <button onclick="document.getElementById('tutorialMenuModal').remove();${item.id === '__tour' ? `localStorage.removeItem('tour_done');startProductTour()` : `showTutorial('${item.id}')`}" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;text-align:left;transition:all .15s" onmouseover="this.style.background='rgba(10,132,255,0.12)';this.style.borderColor='rgba(10,132,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.08)'">
+            <span style="font-size:22px;flex-shrink:0">${item.icon}</span>
+            <span>${item.title}</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+}
+
+function showTutorial(id) {
+  const tut = TUTORIALS[id];
+  if(!tut) return;
+
+  // Cerrar menú si está abierto
+  document.getElementById('tutorialMenuModal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'tutorialModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:5100;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s';
+
+  modal.innerHTML = `
+    <style>
+      @keyframes tutPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+      @keyframes tutBlink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(1.3)} }
+      @keyframes tutBar { 0%,100%{height:20%} 50%{height:90%} }
+      @keyframes tutSlide { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+      @keyframes tutPop { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+      @keyframes tutFade { from{opacity:0} to{opacity:1} }
+      @keyframes tutHand { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08) rotate(-5deg)} }
+      @keyframes tutSpin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+      @keyframes tutGlow { 0%,100%{box-shadow:0 0 4px rgba(10,132,255,0.4)} 50%{box-shadow:0 0 16px rgba(10,132,255,0.8)} }
+      @keyframes tutLoadBar { from{width:0} to{width:100%} }
+    </style>
+    <div style="background:linear-gradient(180deg,#1c1c28,#0a0a0f);border:1px solid rgba(255,255,255,0.1);border-radius:20px;max-width:480px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,0.6);overflow:hidden">
+      <div style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+        <div>
+          <h2 style="font-size:18px;font-weight:600;margin:0 0 4px;color:#fff;letter-spacing:-0.3px">${tut.title}</h2>
+          <p style="margin:0;color:rgba(255,255,255,0.5);font-size:13px">${tut.subtitle}</p>
+        </div>
+        <button onclick="document.getElementById('tutorialModal').remove()" style="width:32px;height:32px;border:none;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.6);border-radius:50%;cursor:pointer;font-size:16px;flex-shrink:0">✕</button>
+      </div>
+      <div id="tutStage" style="height:280px;background:radial-gradient(circle at center,rgba(10,132,255,0.06),transparent 70%);display:flex;align-items:center;justify-content:center;padding:20px"></div>
+      <div id="tutSubtitle" style="padding:14px 24px;text-align:center;color:rgba(255,255,255,0.85);font-size:14px;font-weight:500;min-height:48px;display:flex;align-items:center;justify-content:center;border-top:1px solid rgba(255,255,255,0.06)"></div>
+      <div style="height:3px;background:rgba(255,255,255,0.06)"><div id="tutProgress" style="height:100%;background:linear-gradient(90deg,#0a84ff,#5e5ce6,#bf5af2);width:0;transition:width 0.1s linear"></div></div>
+      <div style="padding:14px 24px;display:flex;justify-content:space-between;gap:12px">
+        <button id="tutRestart" style="padding:8px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:rgba(255,255,255,0.7);font-size:12px;cursor:pointer;font-family:inherit">↻ Reiniciar</button>
+        <button onclick="document.getElementById('tutorialModal').remove()" style="padding:8px 18px;border-radius:8px;border:none;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Entendido</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const stage = modal.querySelector('#tutStage');
+  const subtitleEl = modal.querySelector('#tutSubtitle');
+  const progressEl = modal.querySelector('#tutProgress');
+  
+  let startTime = performance.now();
+  let currentSceneIdx = -1;
+
+  function tick() {
+    if(!document.getElementById('tutorialModal')) return;
+    const elapsed = (performance.now() - startTime) / 1000;
+    const progress = Math.min(1, elapsed / tut.duration);
+    progressEl.style.width = (progress * 100) + '%';
+    let sceneIdx = 0;
+    for(let i = tut.scenes.length - 1; i >= 0; i--) {
+      if(elapsed >= tut.scenes[i].time) { sceneIdx = i; break; }
+    }
+    if(sceneIdx !== currentSceneIdx) {
+      currentSceneIdx = sceneIdx;
+      const scene = tut.scenes[sceneIdx];
+      stage.innerHTML = scene.render();
+      subtitleEl.textContent = scene.subtitle;
+    }
+    if(elapsed >= tut.duration) {
+      startTime = performance.now();
+      currentSceneIdx = -1;
+    }
+    requestAnimationFrame(tick);
+  }
+
+  modal.querySelector('#tutRestart').onclick = () => {
+    startTime = performance.now();
+    currentSceneIdx = -1;
+  };
+
+  requestAnimationFrame(tick);
+  modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+}
+
+
+
+
+// ═══════════════════════════════════════════════════════════════
+//  SISTEMA DE NOTIFICACIONES Y MODALES (Apple-style)
+// ═══════════════════════════════════════════════════════════════
+
+// Toast notification (reemplaza alert)
+function notify(msg, type = 'info', duration = 3500) {
+  // Stack de notificaciones (no se pisan)
+  let stack = document.getElementById('notifyStack');
+  if(!stack) {
+    stack = document.createElement('div');
+    stack.id = 'notifyStack';
+    stack.style.cssText = 'position:fixed;top:74px;left:50%;transform:translateX(-50%);z-index:5000;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;max-width:90vw';
+    document.body.appendChild(stack);
+  }
+
+  const palette = {
+    success: { bg:'linear-gradient(135deg,rgba(48,209,88,0.95),rgba(94,200,202,0.95))', border:'rgba(48,209,88,0.4)', icon:'✓' },
+    error:   { bg:'linear-gradient(135deg,rgba(255,69,58,0.95),rgba(191,90,242,0.95))', border:'rgba(255,69,58,0.4)', icon:'✕' },
+    warning: { bg:'linear-gradient(135deg,rgba(255,159,10,0.95),rgba(255,55,95,0.95))', border:'rgba(255,159,10,0.4)', icon:'!' },
+    info:    { bg:'linear-gradient(135deg,rgba(10,132,255,0.95),rgba(94,92,230,0.95))', border:'rgba(10,132,255,0.4)', icon:'ⓘ' },
+  };
+  const c = palette[type] || palette.info;
+
+  const el = document.createElement('div');
+  el.style.cssText = `pointer-events:auto;padding:12px 18px;border-radius:14px;backdrop-filter:blur(20px);background:${c.bg};border:1px solid ${c.border};color:#fff;font-family:var(--font);font-weight:500;font-size:14px;letter-spacing:0.2px;box-shadow:0 8px 32px rgba(0,0,0,0.4);min-width:240px;max-width:380px;display:flex;align-items:center;gap:10px;opacity:0;transform:translateY(-10px);transition:all .3s cubic-bezier(.34,1.56,.64,1)`;
+  el.innerHTML = `<span style="font-size:18px;flex-shrink:0">${c.icon}</span><span style="flex:1">${msg}</span>`;
+  stack.appendChild(el);
+
+  // Trigger animation
+  requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  });
+
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-10px)';
+    setTimeout(() => el.remove(), 300);
+  }, duration);
+}
+
+// Confirm modal (reemplaza confirm)
+function confirmDialog(title, message, opts = {}) {
+  return new Promise((resolve) => {
+    const okText = opts.okText || 'Aceptar';
+    const cancelText = opts.cancelText || 'Cancelar';
+    const danger = opts.danger || false;
+
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,0.6);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s';
+    modal.innerHTML = `
+      <div style="background:linear-gradient(180deg,#1c1c28,#0a0a0f);border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:24px;max-width:380px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,0.6)">
+        <h2 style="font-size:17px;font-weight:600;margin:0 0 6px;color:#fff;letter-spacing:-0.3px">${title}</h2>
+        <p style="margin:0 0 18px;color:rgba(255,255,255,0.6);font-size:13px;line-height:1.5">${message}</p>
+        <div style="display:flex;gap:8px">
+          <button id="confCancel" style="flex:1;padding:11px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:rgba(255,255,255,0.85);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit">${cancelText}</button>
+          <button id="confOk" style="flex:1;padding:11px;border-radius:10px;border:none;background:${danger ? 'linear-gradient(135deg,#ff453a,#bf5af2)' : 'linear-gradient(135deg,#0a84ff,#5e5ce6)'};color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px ${danger ? 'rgba(255,69,58,0.3)' : 'rgba(10,132,255,0.3)'}">${okText}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector('#confOk').onclick = () => { modal.remove(); resolve(true); };
+    modal.querySelector('#confCancel').onclick = () => { modal.remove(); resolve(false); };
+    modal.onclick = (e) => { if(e.target === modal) { modal.remove(); resolve(false); } };
+  });
+}
+
+// Prompt modal (reemplaza prompt)
+function promptDialog(title, message, opts = {}) {
+  return new Promise((resolve) => {
+    const placeholder = opts.placeholder || '';
+    const defaultValue = opts.default || '';
+    const type = opts.type || 'text';
+    const okText = opts.okText || 'Continuar';
+
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,0.6);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s';
+    modal.innerHTML = `
+      <div style="background:linear-gradient(180deg,#1c1c28,#0a0a0f);border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:24px;max-width:380px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,0.6)">
+        <h2 style="font-size:17px;font-weight:600;margin:0 0 6px;color:#fff;letter-spacing:-0.3px">${title}</h2>
+        <p style="margin:0 0 14px;color:rgba(255,255,255,0.6);font-size:13px;line-height:1.5">${message}</p>
+        <input id="promptInput" type="${type}" placeholder="${placeholder}" value="${defaultValue}" autofocus
+               style="width:100%;padding:11px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;font-size:14px;font-family:inherit;margin-bottom:16px;box-sizing:border-box;transition:border-color .15s"
+               onfocus="this.style.borderColor='#0a84ff'" onblur="this.style.borderColor='rgba(255,255,255,0.15)'"/>
+        <div style="display:flex;gap:8px">
+          <button id="prCancel" style="flex:1;padding:11px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:rgba(255,255,255,0.85);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit">Cancelar</button>
+          <button id="prOk" style="flex:1;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(10,132,255,0.3)">${okText}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    const input = modal.querySelector('#promptInput');
+    const submit = () => { modal.remove(); resolve(input.value.trim()); };
+    const cancel = () => { modal.remove(); resolve(null); };
+    modal.querySelector('#prOk').onclick = submit;
+    modal.querySelector('#prCancel').onclick = cancel;
+    input.onkeydown = (e) => { if(e.key === 'Enter') submit(); };
+    modal.onclick = (e) => { if(e.target === modal) cancel(); };
+  });
+}
+
+
+// Helper: segmented contro
+
+// ═══════════════════════════════════════════════════════════════
+//  LÓGICA DE DEDOS → RITMO (Lectura de Dedos, Vázquez p.82)
+//
+//  Regla del libro (subdivisión binaria):
+//  - Dedo EXTENDIDO = NOTA (corchea)
+//  - Dedo REPLEGADO = SILENCIO (corchea)
+//  - Los dedos se leen derecha→izquierda del director
+//    (= izquierda→derecha para el músico mirando al frente)
+//  - Se usan los 4 dedos (sin pulgar) en binaria
+//  - El pulgar NO se usa para evitar confusión con señal POCO
+//
+//  IMPORTANTE: El número de dedos levantados define el patrón,
+//  pero también el PULGAR cuenta como posición 1 del tiempo fuerte
+//  cuando está solo levantado.
+//
+//  Mapeo visual imagen del usuario:
+//  Imagen 1: partitura 2/4  "1 y 2 y" = 4 corcheas = 4 dedos levantados
+//  Imagen 2: 4 dedos (pulgar, índice, medio, anular) = ese patrón
+// ═══════════════════════════════════════════════════════════════
+
+const FINGER_NAMES = ['Pulgar','Índice','Medio','Anular','Meñique'];
+const FINGER_SHORT = ['P','I','M','A','Ñ'];
+
+// Patrón según dedos levantados — subdivisión binaria (4/4)
+// fingerMask: array de 5 bools [thumb, index, middle, ring, pinky]
+// Retorna array de pulsos (corcheas): true=nota, false=silencio
+//
+// REGLA DEL LIBRO (p.82): el PULGAR nunca es un golpe.
+// Solo se usan los 4 dedos restantes (índice, medio, anular, meñique).
+// Cada dedo = una corchea en la posición correspondiente del compás:
+//   índice  → slot 0  (tiempo 1)
+//   medio   → slot 2  (tiempo 2)
+//   anular  → slot 4  (tiempo 3)
+// Convierte patrón a nombre de ritmo
+function patternToName(mask) {
+  const up = mask.filter(Boolean).length;
+  const names = ['Silencio','Downbeat','Par de corcheas','Tresillo','Cuatro corcheas','Compás lleno'];
+  return names[Math.min(up, names.length-1)];
+}
+
+// Icono de cada dedo
+function fingerIcon(up) { return up ? '●' : '○'; }
+
+// ═══════════════════════════════════════════════════════════════
+//  ESTADO
+// ═══════════════════════════════════════════════════════════════
+const state = {
+  rightMask: [false,false,false,false],
+  leftMask:  [false,false,false,false],
+  rightFist: false,
+  leftFist:  false,
+  compas: '4/4',
+  subdiv: '2',
+  bpm: 100,
+  // ── TRACKS — modelo multi-pista ──
+  // tracks[instrId] = [ {pattern, compas, rightMask, leftMask, rightFist, leftFist}, ... ]
+  // Cada instrumento tiene su propia pista independiente.
+  // Al reproducir, se alinean por índice de compás.
+  tracks: {},          // poblado en init
+  activeMeasure: -1,   // índice de compás activo (para highlight)
+  activeTrackInstr: null, // instrumento cuya pista se está mostrando en detalle
+  audioCtx: null,
+  fps: 0, frames: 0, lastFT: 0,
+  cameraActive: false,
+  lastCapture: 0,
+  playing: false,
+  stopRequested: false,
+  pendingInsertAfter: -1,
+  dragSrcIdx: undefined,
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  DETECCIÓN DE DEDOS — sin pulgar, dos manos
+// ═══════════════════════════════════════════════════════════════
+
+// Devuelve true si la mano es un puño cerrado
+// (todos los 4 dedos doblados, excluyendo pulgar)
+function isFist(landmarks) {
+  const tips = [8, 12, 16, 20];
+  const mcps = [5,  9, 13, 17];
+  const wrist = landmarks[0];
+  const handSize = Math.hypot(
+    landmarks[9].x - wrist.x,
+    landmarks[9].y - wrist.y
+  ) || 0.1;
+  let closed = 0;
+  for(let i=0;i<4;i++) {
+    // Dedo cerrado: tip claramente por debajo del MCP, normalizado
+    const tipBelowMcp = (landmarks[tips[i]].y - landmarks[mcps[i]].y) / handSize;
+    if(tipBelowMcp > 0.10) closed++;
+  }
+  return closed >= 4; // los 4 dedos deben estar claramente cerrados
+}
+
+// Detecta qué dedos están levantados (excluyendo pulgar siempre)
+// Retorna array de 4 bools: [índice, medio, anular, meñique]
+//
+// Estrategia robusta:
+//   1. Normalizar por el tamaño de la mano (distancia muñeca→dedo medio MCP)
+//   2. Cada dedo: comparar TIP vs PIP en Y normalizado con umbral generoso
+//   3. Confirmación secundaria: TIP también por encima del MCP
+//   4. Para meñique (más corto): umbral reducido + comparar con anular como referencia
+function detectFingers(landmarks) {
+  const tips = [8, 12, 16, 20];   // punta
+  const pips = [7, 11, 15, 19];   // articulación proximal (PIP)
+  const mcps = [5,  9, 13, 17];   // nudillo base (MCP)
+  const wrist = landmarks[0];
+
+  // Tamaño de mano: distancia muñeca → MCP del dedo medio (landmark 9)
+  const handSize = Math.hypot(
+    landmarks[9].x - wrist.x,
+    landmarks[9].y - wrist.y
+  ) || 0.1;
+
+  const mask = [false,false,false,false];
+
+  for(let i = 0; i < 4; i++) {
+    const tip = landmarks[tips[i]];
+    const pip = landmarks[pips[i]];
+    const mcp = landmarks[mcps[i]];
+
+    // Diferencia Y normalizada (negativa = tip más arriba = dedo extendido)
+    const tipAbovePip = (pip.y - tip.y) / handSize;
+    const tipAboveMcp = (mcp.y - tip.y) / handSize;
+
+    // Umbral adaptado por dedo:
+    // índice/medio: umbral 0.15 (dedos largos, exigen extensión clara)
+    // anular: 0.12 (un poco más permisivo)
+    // meñique: 0.08 (el más corto, umbral menor)
+    const thresholds = [0.15, 0.15, 0.12, 0.08];
+    const th = thresholds[i];
+
+    // Levantado si supera el PIP por encima del umbral
+    // O si la punta está claramente por encima del MCP (movimiento parcial)
+    mask[i] = tipAbovePip > th || (tipAboveMcp > 0.20 && tipAbovePip > 0.0);
+  }
+
+  // Corrección de falsos positivos entre dedos adyacentes:
+  // Si el anular está "levantado" pero el índice Y el medio están bajos,
+  // probablemente es ruido. Aplicar solo para anular y meñique.
+  if(mask[2] && !mask[0] && !mask[1]) {
+    const tipAbovePip = (landmarks[pips[2]].y - landmarks[tips[2]].y) / handSize;
+    if(tipAbovePip < 0.18) mask[2] = false;
+  }
+  if(mask[3] && !mask[0] && !mask[1] && !mask[2]) {
+    const tipAbovePip = (landmarks[pips[3]].y - landmarks[tips[3]].y) / handSize;
+    if(tipAbovePip < 0.12) mask[3] = false;
+  }
+
+  return mask;
+}
+
+// Confianza basada en claridad de extensión de los 4 dedos
+function fingerConfidence(landmarks) {
+  const tips   = [8, 12, 16, 20];
+  const pips   = [7, 11, 15, 19];
+  let conf = 0;
+  for(let i=0;i<4;i++) {
+    conf += Math.abs(landmarks[tips[i]].y - landmarks[pips[i]].y);
+  }
+  return Math.min(1, conf * 4);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FINGER MASK → PATRÓN RÍTMICO  (modelo DIDI — una sola línea)
+//
+//  En un compás de 4/4: D=tiempo1, I=tiempo2, D=tiempo3, I=tiempo4
+//  Mano DERECHA controla los tiempos impares (1 y 3).
+//  Mano IZQUIERDA controla los tiempos pares (2 y 4).
+//
+//  Dentro de cada tiempo, los dedos definen la subdivisión:
+//    índice  = el tiempo exacto (1, 2, 3 o 4)
+//    medio   = el aire del tiempo siguiente (+y)
+//    anular  = (reservado / extensión)
+//    meñique = (reservado / extensión)
+//
+//  Si la mano es puño → silencio en sus tiempos.
+//
+//  Mano DERECHA: índice→slot0(1), medio→slot1(1y), anular→slot4(3), meñique→slot5(3y)
+//  Mano IZQUIERDA: meñique→slot2(2), anular→slot3(2y), medio→slot6(4), índice→slot7(4y)
+//    (lectura espejo: meñique izq = tiempo más "cercano al centro" = 2)
+// ═══════════════════════════════════════════════════════════════
+function fingerMaskToPattern(rightMask, leftMask, rightFist, leftFist, compas='4/4', subdiv='2') {
+  const beatsMap = {'4/4':8, '2/4':4, '3/4':6, '6/8':6, '3/3':9};
+  const beats = beatsMap[compas] || 8;
+  const pattern = Array(beats).fill(false);
+
+  if(compas === '4/4') {
+    // Derecha → primera mitad: slots 0-3 (tiempos 1, 1y, 2, 2y)
+    // índice=1, medio=1y, anular=2, meñique=2y
+    if(!rightFist) {
+      if(rightMask[0]) pattern[0] = true;
+      if(rightMask[1]) pattern[1] = true;
+      if(rightMask[2]) pattern[2] = true;
+      if(rightMask[3]) pattern[3] = true;
+    }
+    // Izquierda → segunda mitad: slots 4-7 (tiempos 3, 3y, 4, 4y)
+    // meñique=3, anular=3y, medio=4, índice=4y
+    if(!leftFist) {
+      if(leftMask[3]) pattern[4] = true;
+      if(leftMask[2]) pattern[5] = true;
+      if(leftMask[1]) pattern[6] = true;
+      if(leftMask[0]) pattern[7] = true;
+    }
+  } else if(compas === '2/4') {
+    // Derecha → slots 0-1 (1, 1y), Izquierda → slots 2-3 (2, 2y)
+    if(!rightFist) {
+      if(rightMask[0]) pattern[0] = true;
+      if(rightMask[1]) pattern[1] = true;
+    }
+    if(!leftFist) {
+      if(leftMask[3]) pattern[2] = true;
+      if(leftMask[2]) pattern[3] = true;
+    }
+  } else if(compas === '3/4') {
+    // Derecha → slots 0,1,2 (1, 1y, 2), Izquierda → slots 3,4,5 (2y, 3, 3y)
+    if(!rightFist) {
+      if(rightMask[0]) pattern[0] = true; // índice → 1
+      if(rightMask[1]) pattern[1] = true; // medio → 1y
+      if(rightMask[2]) pattern[2] = true; // anular → 2
+    }
+    if(!leftFist) {
+      if(leftMask[3]) pattern[3] = true; // meñique → 2y
+      if(leftMask[2]) pattern[4] = true; // anular → 3
+      if(leftMask[1]) pattern[5] = true; // medio → 3y
+    }
+  } else if(compas === '6/8') {
+    // 6/8 = 2 tiempos ternarios: (1-2-3) (4-5-6)
+    // Derecha → primer tiempo ternario: slots 0,1,2 (índice, medio, anular)
+    // Izquierda → segundo tiempo ternario: slots 3,4,5 (meñique, anular, medio)
+    if(!rightFist) {
+      if(rightMask[0]) pattern[0] = true;
+      if(rightMask[1]) pattern[1] = true;
+      if(rightMask[2]) pattern[2] = true;
+    }
+    if(!leftFist) {
+      if(leftMask[3]) pattern[3] = true;
+      if(leftMask[2]) pattern[4] = true;
+      if(leftMask[1]) pattern[5] = true;
+    }
+  } else if(compas === '3/3') {
+    // 3/3 = 3 grupos de 3 notas (9 slots total), captura en 3 pasos
+    // Paso 1 (mano DER): slots 0,1,2
+    // Paso 2 (mano IZQ): slots 3,4,5
+    // Paso 3 (mano DER otra vez): slots 6,7,8
+    // El livePattern usa el step actual y combina con lo ya capturado en steps anteriores
+    const step = state.threeThreeStep || 0; // 0, 1, 2
+    const accumulated = state.threeThreeAccum || Array(9).fill(false);
+    
+    // Mostrar lo ya capturado
+    for(let i = 0; i < 9; i++) {
+      if(accumulated[i]) pattern[i] = true;
+    }
+    
+    // Agregar lo del step actual (live)
+    if(step === 0 && !rightFist) {
+      // Mano DER → slots 0,1,2
+      if(rightMask[0]) pattern[0] = true;
+      if(rightMask[1]) pattern[1] = true;
+      if(rightMask[2]) pattern[2] = true;
+    } else if(step === 1 && !leftFist) {
+      // Mano IZQ → slots 3,4,5
+      if(leftMask[3]) pattern[3] = true;
+      if(leftMask[2]) pattern[4] = true;
+      if(leftMask[1]) pattern[5] = true;
+    } else if(step === 2 && !rightFist) {
+      // Mano DER otra vez → slots 6,7,8
+      if(rightMask[0]) pattern[6] = true;
+      if(rightMask[1]) pattern[7] = true;
+      if(rightMask[2]) pattern[8] = true;
+    }
+  }
+
+  return pattern;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DIBUJO DEL OVERLAY DE MANO
+// ═══════════════════════════════════════════════════════════════
+function drawHand(ctx, lm, w, h, mask4, isFistState, color='#c8420a') {
+  const conn = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],
+    [0,9],[9,10],[10,11],[11,12],[0,13],[13,14],[14,15],[15,16],
+    [0,17],[17,18],[18,19],[19,20],[5,9],[9,13],[13,17]];
+
+  const lineColor = isFistState ? 'rgba(100,100,100,0.5)' : `${color}80`;
+  ctx.strokeStyle = lineColor; ctx.lineWidth = 1.5;
+  conn.forEach(([a,b])=>{
+    ctx.beginPath();
+    ctx.moveTo(lm[a].x*w, lm[a].y*h);
+    ctx.lineTo(lm[b].x*w, lm[b].y*h);
+    ctx.stroke();
+  });
+
+  // Tips de los 4 dedos (sin pulgar): landmarks 8,12,16,20
+  const fingerTipLM = [8, 12, 16, 20];
+  lm.forEach((p, i) => {
+    const tipIdx = fingerTipLM.indexOf(i);
+    const isFingerTip = tipIdx >= 0;
+    const isUp = isFingerTip && !isFistState && mask4[tipIdx];
+    // Pulgar (landmarks 1-4): siempre neutral
+    const isThumb = i >= 1 && i <= 4;
+
+    if(isThumb) {
+      ctx.fillStyle = 'rgba(150,130,100,0.25)';
+    } else if(isUp) {
+      ctx.fillStyle = color;
+    } else if(isFingerTip) {
+      ctx.fillStyle = isFistState ? 'rgba(80,80,80,0.4)' : `${color}60`;
+    } else {
+      ctx.fillStyle = isFistState ? 'rgba(80,80,80,0.2)' : `${color}30`;
+    }
+
+    const r = isFingerTip ? 7 : (i === 0 ? 4 : 3);
+    ctx.beginPath();
+    ctx.arc(p.x*w, p.y*h, r, 0, Math.PI*2);
+    ctx.fill();
+    if(isUp) {
+      ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+    }
+  });
+
+  // Si es puño: dibujar X roja encima de la muñeca
+  if(isFistState) {
+    const wx = lm[0].x*w, wy = lm[0].y*h;
+    ctx.strokeStyle='rgba(200,66,10,0.8)'; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(wx-12,wy-12); ctx.lineTo(wx+12,wy+12); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(wx+12,wy-12); ctx.lineTo(wx-12,wy+12); ctx.stroke();
+  }
+}
+
+// Dibuja el pentagrama completo: TODOS los compases acumulados + el actual en vivo
+// Wrapper para el canvas principal
+
+// ═══════════════════════════════════════════════════════════════
+//  AUTH + PAYWALL (Fase 2 - mock local, listo para Clerk/Supabase)
+// ═══════════════════════════════════════════════════════════════
+const PLANS = {
+  free:    { name:'Free',    maxInstruments:2, maxMeasures:4,  canSave:false, canCatalog:false, canLoop:false },
+  premium: { name:'Premium', maxInstruments:6, maxMeasures:99, canSave:true,  canCatalog:true,  canLoop:true  },
+  pro:     { name:'Pro',     maxInstruments:6, maxMeasures:99, canSave:true,  canCatalog:true,  canLoop:true  },
+};
+
+const FREE_INSTRUMENTS = ['conga','clave']; // los 2 disponibles en plan free
+
+// User state (persistido en localStorage, reemplazable por Clerk/Supabase)
+function getUser() {
+  try {
+    const raw = localStorage.getItem('percusignal_user');
+    if(!raw) return null;
+    const u = JSON.parse(raw);
+    
+    // Verificar expiración: si active_until pasó, bajar a free
+    if(u.active_until && u.plan && u.plan !== 'free') {
+      const expiry = new Date(u.active_until);
+      if(expiry < new Date()) {
+        console.log('[plan] Expirado, bajando a free');
+        u.plan = 'free';
+        u._expired = true; // marca para notificar
+        // Guardar el plan actualizado (sin disparar refresh aún)
+        try { localStorage.setItem('percusignal_user', JSON.stringify(u)); } catch{}
+      }
+    }
+    return u;
+  } catch { return null; }
+}
+function setUser(u) {
+  if(u) localStorage.setItem('percusignal_user', JSON.stringify(u));
+  else  localStorage.removeItem('percusignal_user');
+  // Trigger full UI refresh
+  try { refreshUIForCurrentPlan(); } catch(e) { console.warn('UI refresh:', e); }
+}
+
+// Re-renderiza todo lo que depende del plan actual (badge, locks, etc)
+function refreshUIForCurrentPlan() {
+  try { if(typeof renderPlanBadge === 'function') renderPlanBadge(); } catch(e){ console.warn('badge:',e); }
+
+  if(typeof INSTRUMENTS === 'undefined') return;
+
+  INSTRUMENTS.forEach(inst => {
+    const btn = document.getElementById('instrBtn_' + inst.id);
+    if(!btn) return;
+
+    const locked = isInstrumentLocked(inst.id);
+    btn.style.opacity = locked ? '0.6' : '1';
+
+    // Trabajar sobre el icono SIN destruir el SVG (que tiene gradientes con IDs únicos)
+    const slot = btn.querySelector('[data-icon-slot]');
+    if(slot) {
+      // Quitar el badge de lock existente (si lo hay)
+      const existingLock = slot.querySelector('.lock-badge');
+      if(existingLock) existingLock.remove();
+
+      // Agregar el lock badge solo si está bloqueado
+      if(locked) {
+        const lockBadge = document.createElement('span');
+        lockBadge.className = 'lock-badge';
+        lockBadge.style.cssText = 'position:absolute;bottom:-2px;right:-2px;font-size:11px;background:#000;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;z-index:2';
+        lockBadge.textContent = '🔒';
+        slot.appendChild(lockBadge);
+      }
+    }
+  });
+
+  // Repintar el pentagrama
+  try { if(typeof rebuildScoreDisplay === 'function') rebuildScoreDisplay(); } catch(e){ console.warn('score:',e); }
+}
+function currentPlan() {
+  const u = getUser();
+  return PLANS[u?.plan || 'free'];
+}
+
+function isInstrumentLocked(instrId) {
+  const plan = currentPlan();
+  if(plan.maxInstruments >= 6) return false;
+  return !FREE_INSTRUMENTS.includes(instrId);
+}
+
+function canAddMeasure() {
+  const plan = currentPlan();
+  const max = Math.max(0, ...INSTRUMENTS.map(i=>(state.tracks?.[i.id]||[]).length));
+  return max < plan.maxMeasures;
+}
+
+// ── Paywall modal ──
+function showPaywall(reason='premium') {
+  const modal = document.createElement('div');
+  modal.id = 'paywallModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s';
+  const messages = {
+    instrument: { icon:'🔒', title:'Instrumento Premium', desc:'Conga y clave están en el plan Free. Surdo, campana, cajón y shekeré requieren Premium.' },
+    measures:   { icon:'📊', title:'Límite de compases alcanzado', desc:'El plan Free permite hasta 4 compases por sesión. Pasá a Premium para compases ilimitados.' },
+    save:       { icon:'💾', title:'Guardar requiere Premium', desc:'Guardar y cargar sesiones es una feature Premium. Probá 7 días gratis.' },
+    catalog:    { icon:'📖', title:'Catálogo Premium', desc:'El catálogo de 30 señas del libro está disponible en Premium.' },
+    loop:       { icon:'🔁', title:'Loop requiere Premium', desc:'El loop continuo por pista es una feature Premium.' },
+  };
+  const m = messages[reason] || messages.instrument;
+
+  modal.innerHTML = `
+    <div style="background:linear-gradient(180deg,#1c1c1e,#0a0a0a);border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:32px;max-width:420px;width:100%;text-align:center">
+      <div style="font-size:48px;margin-bottom:16px">${m.icon}</div>
+      <h2 style="font-size:24px;font-weight:700;margin-bottom:12px;letter-spacing:-0.5px">${m.title}</h2>
+      <p style="color:rgba(255,255,255,0.7);margin-bottom:24px;line-height:1.5;font-size:15px">${m.desc}</p>
+      <div style="background:rgba(10,132,255,0.1);border:1px solid rgba(10,132,255,0.3);border-radius:12px;padding:16px;margin-bottom:20px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#0a84ff;font-weight:600;margin-bottom:6px">Premium · USD 8/mes</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.7);line-height:1.6">
+          ✓ Los 6 instrumentos<br>
+          ✓ Compases ilimitados<br>
+          ✓ Guardar sesiones · catálogo · loop
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button onclick="startCheckout('premium')" style="padding:12px;border-radius:12px;border:none;background:#0a84ff;color:#fff;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit">Probar 7 días gratis</button>
+        <button onclick="document.getElementById('paywallModal').remove()" style="padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.7);font-size:14px;cursor:pointer;font-family:inherit">Ahora no</button>
+      </div>
+      <div style="margin-top:16px;font-size:11px;color:rgba(255,255,255,0.3)">
+        ¿Ya sos Premium? <a href="#" onclick="showLogin();return false" style="color:#0a84ff">Iniciar sesión</a>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+async function startCheckout(plan) {
+  // Mapear nombres de plan al formato del backend
+  const planMap = {
+    'premium': 'premium_monthly',
+    'premium_yearly': 'premium_yearly',
+    'pro': 'pro'
+  };
+  const backendPlan = planMap[plan] || 'premium_monthly';
+
+  // Pedir email
+  const u = getUser();
+  let email = u?.email;
+  if(!email) {
+    email = await promptDialog('Activar Premium', 'Ingresá tu email para iniciar la suscripción:', {type:'email', placeholder:'tu@email.com', okText:'Continuar al pago'});
+    if(!email || !email.includes('@')) {
+      notify('Email inválido', 'error');
+      return;
+    }
+  }
+
+  // Guardar email localmente para detectar el regreso
+  setUser({ email, plan: 'free' });
+
+  try {
+    // Llamar al backend para crear el link de pago
+    const res = await fetch('/api/create-subscription', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan: backendPlan, email })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      notify('Error: ' + data.error, 'error');
+      return;
+    }
+
+    if (data.init_point) {
+      // Redirigir al checkout de MercadoPago
+      window.location.href = data.init_point;
+    } else {
+      notify('No se pudo iniciar el pago. Probá de nuevo.', 'error');
+    }
+  } catch (e) {
+    notify('Error de conexión: ' + e.message, 'error');
+  }
+}
+
+// Detectar el regreso del checkout MP
+async function handleCheckoutReturn() {
+  const params = new URLSearchParams(location.search);
+  // Detectar regreso de MP: viene con varios params posibles
+  const isReturn = params.get('subscribed') === 'true'
+    || params.get('collection_status') === 'approved'
+    || params.get('status') === 'approved'
+    || params.get('payment_id');
+
+  if (!isReturn) return;
+
+  // Email puede estar en localStorage o en el param 'plan'
+  let u = getUser();
+  let email = u?.email;
+
+  if (!email) {
+    // Mostrar modal mejorado en vez de prompt
+    email = await new Promise((resolve) => {
+      const modal = document.createElement('div');
+      modal.style.cssText = 'position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.9);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s';
+      modal.innerHTML = `
+        <div style="background:linear-gradient(180deg,#1c1c28,#0a0a0f);border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:32px;max-width:420px;width:100%;text-align:center">
+          <div style="font-size:48px;margin-bottom:16px">✅</div>
+          <h2 style="font-size:22px;font-weight:700;margin:0 0 8px;letter-spacing:-0.5px">¡Gracias por tu pago!</h2>
+          <p style="color:rgba(255,255,255,0.7);margin:0 0 20px;line-height:1.5;font-size:14px">Ingresá el email que usaste en MercadoPago para activar tu plan Premium:</p>
+          <input id="checkoutEmail" type="email" placeholder="tu@email.com" autofocus
+                 style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;font-size:15px;font-family:inherit;margin-bottom:16px;box-sizing:border-box"/>
+          <button id="checkoutEmailBtn" style="width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">Activar Premium</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      const input = modal.querySelector('#checkoutEmail');
+      const btn = modal.querySelector('#checkoutEmailBtn');
+      const submit = () => {
+        const val = input.value.trim();
+        if (val && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) && !val.match(/@.*@/)) {
+          modal.remove();
+          resolve(val);
+        } else {
+          input.style.borderColor = '#ff453a';
+        }
+      };
+      btn.onclick = submit;
+      input.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
+    });
+    if (!email) return;
+  }
+
+  // Mostrar estado de "activando"
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font);font-size:16px;text-align:center;padding:20px';
+  overlay.innerHTML = '<div><div style="font-size:48px;margin-bottom:16px">⏳</div><div style="font-size:18px;font-weight:500;margin-bottom:8px">Activando tu plan...</div><div style="font-size:13px;color:rgba(255,255,255,0.6)">Esto puede tomar unos segundos</div></div>';
+  document.body.appendChild(overlay);
+
+  // Intentar verificar el plan hasta 5 veces, esperando que el webhook procese
+  let activated = false;
+  for (let i = 0; i < 5; i++) {
+    try {
+      const res = await fetch('/api/get-user-plan?email=' + encodeURIComponent(email));
+      const data = await res.json();
+      if (data.plan && data.plan !== 'free') {
+        setUser({ email, plan: data.plan });
+        activated = true;
+        break;
+      }
+    } catch (e) { console.error(e); }
+    await new Promise(r => setTimeout(r, 2000)); // esperar 2 segs entre intentos
+  }
+
+  overlay.remove();
+  history.replaceState({}, '', '/app/');
+
+  if (activated) {
+    const u2 = getUser();
+    // Limpiar URL sin reload
+    history.replaceState({}, '', '/app/');
+    // setUser ya dispara refreshUIForCurrentPlan via su lógica nueva
+    // Mostrar celebración (toast lindo en vez de alert)
+    if(typeof showVoiceToast === 'function') {
+      showVoiceToast('¡Bienvenido a ' + u2.plan.toUpperCase() + '! 🎉', 'success');
+    } else {
+      notify('¡Bienvenido a ' + u2.plan.toUpperCase() + '! 🎉', 'success', 5000);
+    }
+  } else {
+    history.replaceState({}, '', '/app/');
+    notify('Tu pago se está procesando. Recargá en un minuto.', 'warning', 5000);
+  }
+}
+
+async function showLogin() {
+  // Cerrar paywall si está abierto
+  document.getElementById('paywallModal')?.remove();
+  
+  const modal = document.createElement('div');
+  modal.id = 'loginModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s';
+  
+  modal.innerHTML = `
+    <div style="background:linear-gradient(180deg,#1c1c28,#0a0a0f);border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:32px;max-width:400px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,0.6)">
+      
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+        <div>
+          <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#0a84ff,#5e5ce6);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px;box-shadow:0 4px 16px rgba(10,132,255,0.3)">👤</div>
+          <h2 style="font-size:22px;font-weight:700;margin:0 0 6px;letter-spacing:-0.5px;color:#fff">Iniciar sesión</h2>
+          <p style="margin:0;color:rgba(255,255,255,0.6);font-size:14px;line-height:1.5">Ingresá tu email para acceder a tu plan</p>
+        </div>
+        <button onclick="document.getElementById('loginModal').remove()" style="width:32px;height:32px;border:none;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.5);border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;font-family:inherit;flex-shrink:0">✕</button>
+      </div>
+
+      <div style="margin-bottom:18px">
+        <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:rgba(255,255,255,0.5);margin-bottom:8px;font-weight:500">Email</label>
+        <input id="loginEmail" type="email" placeholder="tu@email.com" autofocus
+               style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;font-size:15px;font-family:inherit;box-sizing:border-box;transition:border-color .15s"
+               onfocus="this.style.borderColor='#0a84ff'" 
+               onblur="this.style.borderColor='rgba(255,255,255,0.15)'"/>
+      </div>
+
+      <button id="loginBtn" style="width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(10,132,255,0.3);transition:opacity .15s">Continuar</button>
+
+      <div style="margin-top:18px;padding-top:18px;border-top:1px solid rgba(255,255,255,0.06);text-align:center">
+        <p style="margin:0 0 12px;font-size:13px;color:rgba(255,255,255,0.5)">¿No tenés cuenta?</p>
+        <button onclick="document.getElementById('loginModal').remove(); startCheckout('premium')" style="width:100%;padding:11px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:rgba(255,255,255,0.85);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">⭐ Suscribirme a Premium</button>
+      </div>
+
+      <div style="margin-top:16px;text-align:center;font-size:11px;color:rgba(255,255,255,0.3)">
+        Al ingresar aceptás los <a href="/terminos" style="color:rgba(255,255,255,0.4);text-decoration:underline">términos</a>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  const input = modal.querySelector('#loginEmail');
+  const btn = modal.querySelector('#loginBtn');
+  
+  const doLogin = async () => {
+    const email = input.value.trim();
+    if(!email || !email.includes('@')) {
+      input.style.borderColor = '#ff453a';
+      input.focus();
+      return;
+    }
+    
+    btn.disabled = true;
+    btn.textContent = 'Verificando...';
+    btn.style.opacity = '0.7';
+    
+    try {
+      const res = await fetch('/api/get-user-plan?email=' + encodeURIComponent(email));
+      const data = await res.json();
+      setUser({ email, plan: data.plan || 'free' });
+      modal.remove();
+      
+      if(data.plan && data.plan !== 'free') {
+        // Toast de éxito
+        showVoiceToast('¡Bienvenido a ' + data.plan.toUpperCase() + '!', 'success');
+      }
+      
+      setTimeout(() => location.reload(), 600);
+    } catch(e) {
+      btn.disabled = false;
+      btn.textContent = 'Continuar';
+      btn.style.opacity = '1';
+      notify('Error: ' + e.message, 'error');
+    }
+  };
+  
+  btn.onclick = doLogin;
+  input.onkeydown = (e) => { 
+    if(e.key === 'Enter') doLogin();
+    input.style.borderColor = 'rgba(255,255,255,0.15)';
+  };
+}
+
+function logout() {
+  setUser(null);
+  location.reload();
+}
+
+// ── Render badge del plan en el header ──
+function renderPlanBadge() {
+  const u = getUser();
+  const plan = currentPlan();
+  const slot = document.getElementById('planBadge');
+  if(!slot) return;
+  
+  const planColors = {
+    Free:    { bg:'rgba(255,255,255,0.06)', border:'rgba(255,255,255,0.1)', text:'rgba(255,255,255,0.7)', icon:'🎵' },
+    Premium: { bg:'rgba(10,132,255,0.15)',  border:'rgba(10,132,255,0.4)',  text:'#0a84ff',               icon:'⭐' },
+    Pro:     { bg:'rgba(191,90,242,0.15)',  border:'rgba(191,90,242,0.4)',  text:'#bf5af2',               icon:'🚀' },
+  };
+  const c = planColors[plan.name] || planColors.Free;
+  
+  if(u) {
+    const initial = (u.email[0] || '?').toUpperCase();
+    slot.innerHTML = `
+      <button onclick="showUserPanel()" style="display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;border-radius:980px;border:1px solid ${c.border};background:${c.bg};color:${c.text};font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;transition:all .15s">
+        <span style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#0a84ff,#5e5ce6);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff">${initial}</span>
+        <span style="display:flex;align-items:center;gap:4px">${c.icon} ${plan.name}</span>
+      </button>
+    `;
+  } else {
+    slot.innerHTML = `
+      <button onclick="showLogin()" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:980px;border:1px solid rgba(10,132,255,0.4);background:rgba(10,132,255,0.1);color:#0a84ff;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;transition:all .15s">
+        👤 Iniciar sesión
+      </button>
+    `;
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+//  MODAL DE PERFIL DE USUARIO
+// ═══════════════════════════════════════════════════════════════
+async function showUserPanel() {
+  const u = getUser();
+  if(!u || !u.email) { showLogin(); return; }
+
+  // Fetch datos frescos de Supabase
+  let serverData = null;
+  try {
+    const res = await fetch('/api/get-user-plan?email=' + encodeURIComponent(u.email));
+    serverData = await res.json();
+    if(serverData.plan && serverData.plan !== u.plan) {
+      setUser({ email: u.email, plan: serverData.plan });
+    }
+  } catch(e) { console.warn('Error fetching plan:', e); }
+
+  const plan = serverData?.plan || u.plan || 'free';
+  const planDisplay = PLANS[plan]?.name || 'Free';
+  const activeUntil = serverData?.active_until;
+  
+  const fmtDate = (iso) => {
+    if(!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-AR', { day:'numeric', month:'long', year:'numeric' });
+  };
+  
+  const daysLeft = activeUntil ? Math.max(0, Math.ceil((new Date(activeUntil) - new Date()) / (1000*3600*24))) : 0;
+
+  const planColors = {
+    free:    { bg:'rgba(255,255,255,0.05)', border:'rgba(255,255,255,0.1)', text:'rgba(255,255,255,0.6)', icon:'🎵' },
+    premium: { bg:'rgba(10,132,255,0.1)',   border:'rgba(10,132,255,0.3)',  text:'#0a84ff',               icon:'⭐' },
+    pro:     { bg:'rgba(191,90,242,0.1)',   border:'rgba(191,90,242,0.3)',  text:'#bf5af2',               icon:'🚀' },
+  };
+  const c = planColors[plan] || planColors.free;
+
+  const modal = document.createElement('div');
+  modal.id = 'userPanelModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s';
+
+  const freeFeatures = plan === 'free' ? `
+    <div style="margin-top:20px;padding:16px;background:linear-gradient(135deg,rgba(10,132,255,0.1),rgba(94,92,230,0.1));border:1px solid rgba(10,132,255,0.3);border-radius:12px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#0a84ff;font-weight:600;margin-bottom:8px">Mejorá tu plan</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.8);line-height:1.5;margin-bottom:12px">Premium: los 6 instrumentos, compases ilimitados, guardar sesiones, catálogo de señas y loop por pista.</div>
+      <button onclick="document.getElementById('userPanelModal').remove(); startCheckout('premium')" style="width:100%;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Pasar a Premium · $8.900/mes</button>
+    </div>
+  ` : '';
+
+  const subscriptionInfo = (plan !== 'free' && activeUntil) ? `
+    <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;margin-top:16px">
+      <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px">
+        <span style="color:rgba(255,255,255,0.5)">Activo hasta</span>
+        <span style="color:rgba(255,255,255,0.9);font-weight:500">${fmtDate(activeUntil)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px">
+        <span style="color:rgba(255,255,255,0.5)">Días restantes</span>
+        <span style="color:${daysLeft <= 7 ? '#ff9f0a' : 'rgba(255,255,255,0.9)'};font-weight:500">${daysLeft} ${daysLeft===1?'día':'días'}</span>
+      </div>
+      ${daysLeft <= 7 ? `
+        <div style="margin-top:12px;padding:10px 12px;background:rgba(255,159,10,0.1);border:1px solid rgba(255,159,10,0.3);border-radius:10px;font-size:12px;color:#ff9f0a">
+          ⏰ Tu plan vence pronto. Renová para no perder tus features Premium.
+        </div>
+      ` : ''}
+    </div>
+  ` : '';
+
+  const renewButton = (plan !== 'free') ? `
+    <button onclick="document.getElementById('userPanelModal').remove(); startCheckout('premium')" style="width:100%;padding:11px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;margin-top:8px">Renovar plan</button>
+  ` : '';
+
+  modal.innerHTML = `
+    <div style="background:linear-gradient(180deg,#1c1c28,#0a0a0f);border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:28px;max-width:420px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,0.6)">
+      
+      <!-- Header con avatar -->
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+        <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0a84ff,#5e5ce6);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;color:#fff;box-shadow:0 4px 12px rgba(10,132,255,0.3)">
+          ${(u.email[0] || '?').toUpperCase()}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.8px;font-weight:500;margin-bottom:2px">Tu cuenta</div>
+          <div style="font-size:14px;color:#fff;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.email}</div>
+        </div>
+        <button onclick="document.getElementById('userPanelModal').remove()" style="width:32px;height:32px;border:none;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.6);border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;font-family:inherit">✕</button>
+      </div>
+
+      <!-- Plan card -->
+      <div style="background:${c.bg};border:1px solid ${c.border};border-radius:14px;padding:18px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:${c.text};font-weight:600">Plan actual</div>
+          <div style="font-size:18px">${c.icon}</div>
+        </div>
+        <div style="font-size:26px;font-weight:700;color:${c.text};letter-spacing:-0.5px">${planDisplay}</div>
+        ${subscriptionInfo}
+      </div>
+
+      ${freeFeatures}
+
+      <div style="margin-top:20px;display:flex;flex-direction:column;gap:8px">
+        ${renewButton}
+        <button onclick="document.getElementById('userPanelModal').remove(); logout()" style="width:100%;padding:11px;border-radius:10px;border:1px solid rgba(255,69,58,0.2);background:transparent;color:#ff453a;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">Cerrar sesión</button>
+      </div>
+
+      <div style="margin-top:16px;text-align:center;font-size:11px;color:rgba(255,255,255,0.3)">
+        <a href="mailto:hola@percusignal.com.ar" style="color:rgba(255,255,255,0.4);text-decoration:none">¿Necesitás ayuda? hola@percusignal.com.ar</a>
+      </div>
+
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  INSTRUMENTOS — definición y síntesis procedural
+//  (conga usa sample real, el resto síntesis Web Audio)
+// ═══════════════════════════════════════════════════════════════
+const INSTRUMENTS = [
+  { id:'conga',    name:'Quinto',    emoji:'<svg viewBox="0 0 80 130" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="cg-b-conga" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5a1a1a"/><stop offset="0.5" stop-color="#a02525"/><stop offset="1" stop-color="#5a1a1a"/></linearGradient></defs><ellipse cx="40" cy="20" rx="28" ry="4" fill="#c89028"/><ellipse cx="40" cy="20" rx="28" ry="3.5" fill="none" stroke="#8a6028" stroke-width="0.4"/><ellipse cx="40" cy="19" rx="25" ry="3" fill="#f5ebd8"/><ellipse cx="40" cy="19" rx="25" ry="3" fill="none" stroke="#a89678" stroke-width="0.3"/><path d="M14 22 C12 50 16 90 22 110 L58 110 C64 90 68 50 66 22 Z" fill="url(#cg-b-conga)"/><path d="M19 25 C18 50 22 85 26 105" stroke="#d04040" stroke-width="1" fill="none" opacity="0.6"/><g fill="#c89028"><rect x="13" y="22" width="2" height="14" rx="0.5"/><rect x="24" y="22" width="2" height="16" rx="0.5"/><rect x="39" y="22" width="2" height="16" rx="0.5"/><rect x="54" y="22" width="2" height="16" rx="0.5"/><rect x="65" y="22" width="2" height="14" rx="0.5"/></g><ellipse cx="40" cy="110" rx="18" ry="3" fill="#2a0a0a"/></svg>', iconSmall:'C', color:'#c8420a', dim:'rgba(200,66,10,0.08)' },
+  { id:'surdo',    name:'Surdo',    emoji:'<svg viewBox="0 0 80 130" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="sd-b-surdo" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#a87340"/><stop offset="0.3" stop-color="#d4a574"/><stop offset="0.7" stop-color="#d4a574"/><stop offset="1" stop-color="#a87340"/></linearGradient><linearGradient id="sd-h-surdo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff8e8"/><stop offset="1" stop-color="#c4b498"/></linearGradient><radialGradient id="sd-head-r" cx="0.5" cy="0.3" r="0.7"><stop offset="0" stop-color="#fff8e8"/><stop offset="0.7" stop-color="#e8dcc0"/><stop offset="1" stop-color="#a89878"/></radialGradient></defs><ellipse cx="40" cy="38" rx="34" ry="9" fill="#5a3818"/><ellipse cx="40" cy="36" rx="33" ry="7.5" fill="#8a5a28"/><ellipse cx="40" cy="34" rx="31" ry="6" fill="url(#sd-head-r)"/><ellipse cx="40" cy="34" rx="31" ry="6" fill="none" stroke="#5a3818" stroke-width="0.6"/><rect x="6" y="36" width="68" height="76" fill="url(#sd-b-surdo)"/><rect x="6" y="36" width="68" height="76" fill="none" stroke="#5a3818" stroke-width="0.5"/><line x1="14" y1="42" x2="14" y2="108" stroke="#8a6428" stroke-width="0.5" opacity="0.6"/><line x1="26" y1="42" x2="26" y2="108" stroke="#8a6428" stroke-width="0.4" opacity="0.5"/><line x1="40" y1="42" x2="40" y2="108" stroke="#8a6428" stroke-width="0.5" opacity="0.6"/><line x1="54" y1="42" x2="54" y2="108" stroke="#8a6428" stroke-width="0.4" opacity="0.5"/><line x1="66" y1="42" x2="66" y2="108" stroke="#8a6428" stroke-width="0.5" opacity="0.6"/><rect x="6" y="58" width="68" height="3" fill="#5a3818" opacity="0.4"/><rect x="6" y="88" width="68" height="3" fill="#5a3818" opacity="0.4"/><rect x="6" y="108" width="68" height="4" fill="#3a2010"/><circle cx="14" cy="48" r="1.5" fill="#c89028"/><circle cx="40" cy="48" r="1.5" fill="#c89028"/><circle cx="66" cy="48" r="1.5" fill="#c89028"/><circle cx="14" cy="80" r="1.5" fill="#c89028"/><circle cx="40" cy="80" r="1.5" fill="#c89028"/><circle cx="66" cy="80" r="1.5" fill="#c89028"/><line x1="4" y1="38" x2="4" y2="110" stroke="#5a3818" stroke-width="2"/><line x1="76" y1="38" x2="76" y2="110" stroke="#5a3818" stroke-width="2"/><rect x="14" y="112" width="3" height="14" fill="#3a2010"/><rect x="63" y="112" width="3" height="14" fill="#3a2010"/></svg>', iconSmall:'S', color:'#1a5c8a', dim:'rgba(26,92,138,0.08)' },
+  { id:'campana',  name:'Campana',  emoji:'<svg viewBox="0 0 80 130" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="cp-b-campana" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1a1a1a"/><stop offset="0.4" stop-color="#3a3a3a"/><stop offset="0.7" stop-color="#1a1a1a"/><stop offset="1" stop-color="#0a0a0a"/></linearGradient></defs><g transform="rotate(-20 40 60)"><rect x="-2" y="58" width="44" height="5" rx="2.5" fill="#c89052"/><rect x="-2" y="58" width="44" height="2" fill="#e8c884" opacity="0.6"/><rect x="-2" y="58" width="6" height="5" rx="2.5" fill="#8a6028"/></g><rect x="46" y="22" width="9" height="5" fill="#0a0a0a" rx="0.5"/><rect x="47" y="18" width="7" height="5" fill="#1a1a1a" rx="0.5"/><circle cx="50" cy="20" r="1.2" fill="#3a3a3a"/><path d="M24 28 L56 28 L62 78 L18 78 Z" fill="url(#cp-b-campana)"/><path d="M24 28 L56 28" stroke="#5a5a5a" stroke-width="0.5"/><path d="M27 30 C26 50 30 72 32 76" stroke="#6a6a6a" stroke-width="1" fill="none" opacity="0.6"/><path d="M53 30 C54 50 50 72 48 76" stroke="#2a2a2a" stroke-width="1" fill="none" opacity="0.7"/><path d="M18 78 L62 78 L60 82 L20 82 Z" fill="#000"/><path d="M20 82 L60 82" stroke="#3a3a3a" stroke-width="0.4"/><ellipse cx="35" cy="38" rx="4" ry="2" fill="#5a5a5a" opacity="0.4"/></svg>', iconSmall:'♪', color:'#b8860b', dim:'rgba(184,134,11,0.08)' },
+  { id:'clave',    name:'Clave',    emoji:'<svg viewBox="0 0 80 130" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="cl-w-clave" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8c884"/><stop offset="0.5" stop-color="#c89a4a"/><stop offset="1" stop-color="#8a6428"/></linearGradient></defs><g transform="rotate(-12 40 60)"><rect x="32" y="20" width="14" height="80" rx="4" fill="url(#cl-w-clave)"/><ellipse cx="39" cy="48" rx="3.5" ry="5" fill="#3a2010"/><ellipse cx="39" cy="48" rx="2.8" ry="4" fill="#1a0808"/><line x1="32" y1="28" x2="46" y2="28" stroke="#5a3818" stroke-width="0.5"/><line x1="32" y1="92" x2="46" y2="92" stroke="#5a3818" stroke-width="0.5"/><line x1="35" y1="22" x2="35" y2="98" stroke="#8a6428" stroke-width="0.3" opacity="0.6"/><line x1="42" y1="22" x2="42" y2="98" stroke="#8a6428" stroke-width="0.3" opacity="0.6"/></g><g transform="rotate(12 40 60)"><rect x="34" y="22" width="12" height="76" rx="6" fill="url(#cl-w-clave)"/><line x1="34" y1="30" x2="46" y2="30" stroke="#5a3818" stroke-width="0.5"/><line x1="34" y1="90" x2="46" y2="90" stroke="#5a3818" stroke-width="0.5"/><line x1="37" y1="24" x2="37" y2="96" stroke="#8a6428" stroke-width="0.3" opacity="0.6"/><line x1="43" y1="24" x2="43" y2="96" stroke="#8a6428" stroke-width="0.3" opacity="0.6"/><line x1="40" y1="26" x2="40" y2="94" stroke="#f5d898" stroke-width="0.8" opacity="0.5"/></g></svg>', iconSmall:'K', color:'#3a7c3e', dim:'rgba(58,124,62,0.08)' },
+  { id:'cajon',    name:'Cajón',    emoji:'<svg viewBox="0 0 80 130" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="cj-d-cajon" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a3818"/><stop offset="1" stop-color="#3a2008"/></linearGradient><linearGradient id="cj-f-cajon" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8c898"/><stop offset="1" stop-color="#a87a45"/></linearGradient></defs><path d="M58 24 L72 28 L72 100 L58 96 Z" fill="url(#cj-d-cajon)"/><rect x="14" y="22" width="44" height="76" fill="url(#cj-f-cajon)"/><rect x="14" y="22" width="44" height="76" fill="none" stroke="#5a3818" stroke-width="0.5"/><line x1="22" y1="24" x2="22" y2="96" stroke="#8a5a28" stroke-width="0.4" opacity="0.5"/><line x1="36" y1="24" x2="36" y2="96" stroke="#8a5a28" stroke-width="0.3" opacity="0.5"/><line x1="50" y1="24" x2="50" y2="96" stroke="#8a5a28" stroke-width="0.4" opacity="0.5"/><circle cx="25" cy="60" r="6" fill="#1a0a04"/><circle cx="25" cy="60" r="5" fill="#000"/><circle cx="45" cy="48" r="4" fill="#3a2010" stroke="#5a3818" stroke-width="0.3"/><g fill="#5a3818"><circle cx="17" cy="25" r="0.8"/><circle cx="55" cy="25" r="0.8"/><circle cx="17" cy="95" r="0.8"/><circle cx="55" cy="95" r="0.8"/></g></svg>', iconSmall:'◼', color:'#6a3a8a', dim:'rgba(106,58,138,0.08)' },
+  { id:'semillas', name:'Shekeré', emoji:'<svg viewBox="0 0 80 130" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="sk-g-semillas" x1="0.3" y1="0.2" x2="0.7" y2="1"><stop offset="0" stop-color="#d4a564"/><stop offset="0.5" stop-color="#a06830"/><stop offset="1" stop-color="#5a3010"/></linearGradient><linearGradient id="sk-n-semillas" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a5028"/><stop offset="1" stop-color="#5a3010"/></linearGradient></defs><path d="M36 14 Q34 22 35 32 L45 32 Q46 22 44 14 Z" fill="url(#sk-n-semillas)"/><ellipse cx="40" cy="34" rx="7" ry="2.5" fill="#3a1a08"/><path d="M32 34 Q30 40 28 46 L52 46 Q50 40 48 34 Z" fill="url(#sk-n-semillas)"/><path d="M14 50 Q12 80 28 100 L52 100 Q68 80 66 50 Q60 42 40 42 Q20 42 14 50 Z" fill="url(#sk-g-semillas)"/><ellipse cx="26" cy="58" rx="6" ry="10" fill="#e8c894" opacity="0.25"/><g><circle cx="22" cy="56" r="1.8" fill="#d83020"/><circle cx="30" cy="52" r="1.8" fill="#d83020"/><circle cx="40" cy="50" r="1.8" fill="#d83020"/><circle cx="50" cy="52" r="1.8" fill="#d83020"/><circle cx="58" cy="56" r="1.8" fill="#d83020"/><circle cx="18" cy="64" r="1.8" fill="#f0c020"/><circle cx="26" cy="62" r="1.8" fill="#f0c020"/><circle cx="34" cy="60" r="1.8" fill="#f0c020"/><circle cx="46" cy="60" r="1.8" fill="#f0c020"/><circle cx="54" cy="62" r="1.8" fill="#f0c020"/><circle cx="62" cy="64" r="1.8" fill="#f0c020"/><circle cx="16" cy="72" r="1.8" fill="#2a9a3a"/><circle cx="24" cy="72" r="1.8" fill="#2a9a3a"/><circle cx="34" cy="70" r="1.8" fill="#2a9a3a"/><circle cx="46" cy="70" r="1.8" fill="#2a9a3a"/><circle cx="56" cy="72" r="1.8" fill="#2a9a3a"/><circle cx="64" cy="72" r="1.8" fill="#2a9a3a"/><circle cx="18" cy="80" r="1.8" fill="#d83020"/><circle cx="28" cy="80" r="1.8" fill="#d83020"/><circle cx="40" cy="78" r="1.8" fill="#d83020"/><circle cx="52" cy="80" r="1.8" fill="#d83020"/><circle cx="62" cy="80" r="1.8" fill="#d83020"/><circle cx="22" cy="88" r="1.8" fill="#f0c020"/><circle cx="32" cy="88" r="1.8" fill="#f0c020"/><circle cx="40" cy="88" r="1.8" fill="#f0c020"/><circle cx="48" cy="88" r="1.8" fill="#f0c020"/><circle cx="58" cy="88" r="1.8" fill="#f0c020"/><circle cx="26" cy="95" r="1.8" fill="#2a9a3a"/><circle cx="36" cy="96" r="1.8" fill="#2a9a3a"/><circle cx="44" cy="96" r="1.8" fill="#2a9a3a"/><circle cx="54" cy="95" r="1.8" fill="#2a9a3a"/></g></svg>', iconSmall:'◉', color:'#5a7a2a', dim:'rgba(90,122,42,0.08)' },
+];
+
+// Estado de mute por instrumento
+const muteState = Object.fromEntries(INSTRUMENTS.map(i=>[i.id, false]));
+const loopState = Object.fromEntries(INSTRUMENTS.map(i=>[i.id, false]));
+const volumeState = Object.fromEntries(INSTRUMENTS.map(i=>[i.id, 1.0])); // 0..2 multiplicador
+
+// Cargar volúmenes guardados
+try {
+  const saved = JSON.parse(localStorage.getItem('volumeState') || '{}');
+  for(const id in saved) if(id in volumeState) volumeState[id] = saved[id];
+} catch{}
+
+function setInstrumentVolume(instrId, val) {
+  volumeState[instrId] = Math.max(0, Math.min(2, val));
+  try { localStorage.setItem('volumeState', JSON.stringify(volumeState)); } catch{}
+}
+
+// Instrumento actualmente seleccionado para grabar
+let activeInstrId = 'conga';
+
+// Audio engine → /assets/audio.js (Fase 4.2)
+
+// ═══════════════════════════════════════════════════════════════
+//  GUARDAR / CARGAR SESIÓN
+// ═══════════════════════════════════════════════════════════════
+function saveSession() {
+  if(!currentPlan().canSave) { showPaywall('save'); return; }
+  const session = {
+    version: 1,
+    bpm: state.bpm,
+    compas: state.compas,
+    subdiv: state.subdiv,
+    tracks: {},
+    muteState: {...muteState},
+    loopState: {...loopState},
+    savedAt: new Date().toISOString(),
+  };
+  // Serialize tracks (pattern arrays only — no functions)
+  INSTRUMENTS.forEach(inst => {
+    session.tracks[inst.id] = (state.tracks[inst.id]||[]).map(m => ({
+      pattern: m.pattern,
+      compas: m.compas,
+      rightMask: m.rightMask,
+      leftMask: m.leftMask,
+      rightFist: m.rightFist,
+      leftFist: m.leftFist,
+    }));
+  });
+
+  const json = JSON.stringify(session, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const ts = new Date().toISOString().slice(0,16).replace('T','_').replace(':','-');
+  a.download = `percusignal_${ts}.json`;
+  a.href = url;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showVoiceFeedback('✓ Sesión guardada');
+}
+
+function loadSession() {
+  if(!currentPlan().canSave) { showPaywall('save'); return; }
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json,application/json';
+  input.style.display = 'none';
+  const _fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.body;
+  _fsEl.appendChild(input);
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const session = JSON.parse(ev.target.result);
+        if(!session.version || !session.tracks) throw new Error('Archivo inválido');
+
+        // Restore state
+        setBpm(session.bpm || 100);
+        state.compas = session.compas || '4/4';
+        state.subdiv = session.subdiv || '2';
+
+        // Restore tracks
+        INSTRUMENTS.forEach(inst => {
+          state.tracks[inst.id] = (session.tracks[inst.id]||[]).map(m => ({
+            pattern: m.pattern,
+            compas: m.compas || state.compas,
+            rightMask: m.rightMask || [false,false,false,false],
+            leftMask: m.leftMask || [false,false,false,false],
+            rightFist: m.rightFist || false,
+            leftFist: m.leftFist || false,
+          }));
+        });
+
+        // Restore mute/loop
+        if(session.muteState) {
+          INSTRUMENTS.forEach(inst => {
+            muteState[inst.id] = session.muteState[inst.id] || false;
+            const btn = document.getElementById('muteBtn_'+inst.id);
+            if(btn) {
+              const on = muteState[inst.id];
+              btn.style.background = on ? 'var(--red)' : 'var(--fill2)';
+              btn.style.color = on ? '#fff' : 'var(--label3)';
+              btn.style.borderColor = on ? 'var(--red)' : 'var(--separator)';
+            }
+          });
+        }
+        if(session.loopState) {
+          INSTRUMENTS.forEach(inst => {
+            loopState[inst.id] = session.loopState[inst.id] || false;
+            const btn = document.getElementById('loopBtn_'+inst.id);
+            if(btn) {
+              const on = loopState[inst.id];
+              btn.style.background = on ? 'var(--green)' : 'var(--fill2)';
+              btn.style.color = on ? '#000' : 'var(--label3)';
+              btn.style.borderColor = on ? 'var(--green)' : 'var(--separator)';
+            }
+          });
+        }
+
+        // Restore compas segmented control
+        document.querySelectorAll('#segCompas .seg-btn').forEach(b => {
+          b.classList.toggle('active', b.textContent === state.compas);
+        });
+
+        rebuildScoreDisplay();
+        showVoiceFeedback('✓ Sesión cargada');
+        if(input.parentNode) input.parentNode.removeChild(input);
+      } catch(err) {
+        notify('Error al cargar: ' + err.message, 'error');
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+  // Remove if cancelled
+  setTimeout(() => { if(input.parentNode) input.parentNode.removeChild(input); }, 60000);
+}
+</script>
+
+<script>
+// Fallback: ejecutar renderPlanBadge + auto-sync de plan con Supabase
+(function() {
+  function tryRender() {
+    if (typeof renderPlanBadge === 'function' && document.getElementById('planBadge')) {
+      try { renderPlanBadge(); } catch(e) { console.error('renderPlanBadge:', e); }
+      syncPlanInBackground();
+      try { if(typeof injectFeedbackButton === 'function') injectFeedbackButton(); } catch(e){}
+      try { if(typeof checkShareLink === 'function') checkShareLink(); } catch(e){}
+      try { if(typeof showOnboarding === 'function') setTimeout(showOnboarding, 1500); } catch(e){}
+    } else {
+      setTimeout(tryRender, 100);
+    }
+  }
+  async function syncPlanInBackground() {
+    try {
+      const userStr = localStorage.getItem('percusignal_user');
+      if(!userStr) return;
+      const user = JSON.parse(userStr);
+      if(!user.email) return;
+      
+      // Si getUser detectó expiración, avisar al usuario
+      if(user._expired) {
+        if(typeof notify === 'function') {
+          notify('Tu plan Premium venció. Renová para volver a desbloquear todo', 'warning', 6000);
+        }
+        // Limpiar el flag
+        delete user._expired;
+        try { localStorage.setItem('percusignal_user', JSON.stringify(user)); } catch{}
+      }
+      
+      const res = await fetch('/api/get-user-plan?email=' + encodeURIComponent(user.email));
+      const data = await res.json();
+      
+      // Actualizar tanto plan como active_until
+      const planChanged = data.plan && data.plan !== user.plan;
+      const expiryChanged = data.active_until !== user.active_until;
+      
+      if(planChanged || expiryChanged) {
+        if(typeof setUser === 'function') {
+          setUser({ 
+            email: user.email, 
+            plan: data.plan || 'free',
+            active_until: data.active_until || null
+          });
+          if(planChanged && data.plan !== 'free' && typeof notify === 'function') {
+            notify('Tu plan ' + data.plan.toUpperCase() + ' está activo ✨', 'success', 4000);
+          }
+        }
+      }
+    } catch(e) { console.warn('sync plan:', e); }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tryRender);
+  } else {
+    tryRender();
+  }
+})();
+</script>
+
+<script>
+// PWA - Service Worker + Install prompt
+let deferredInstallPrompt = null;
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('[SW] Registered'))
+      .catch(e => console.warn('[SW] Failed:', e));
+  });
+}
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  showInstallButton();
+});
+function showInstallButton() {
+  if (document.getElementById('btnInstall')) return;
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+  const slot = document.querySelector('.header-actions') || document.querySelector('header');
+  if (!slot) return;
+  const btn = document.createElement('button');
+  btn.id = 'btnInstall';
+  btn.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:980px;border:1px solid rgba(10,132,255,0.4);background:rgba(10,132,255,0.1);color:#0a84ff;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;margin-right:8px';
+  btn.innerHTML = '⬇ Instalar app';
+  btn.onclick = async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    if (outcome === 'accepted') {
+      btn.remove();
+      if(typeof notify === 'function') notify('App instalada en tu pantalla de inicio', 'success', 5000);
+    }
+    deferredInstallPrompt = null;
+  };
+  slot.insertBefore(btn, slot.firstChild);
+}
+function detectIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+window.addEventListener('load', () => {
+  if (detectIOS() && !window.matchMedia('(display-mode: standalone)').matches) {
+    setTimeout(() => {
+      if(document.getElementById('btnInstall')) return;
+      const slot = document.querySelector('.header-actions') || document.querySelector('header');
+      if (!slot) return;
+      const btn = document.createElement('button');
+      btn.id = 'btnInstall';
+      btn.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:980px;border:1px solid rgba(10,132,255,0.4);background:rgba(10,132,255,0.1);color:#0a84ff;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;margin-right:8px';
+      btn.innerHTML = '⬇ Instalar';
+      btn.onclick = showIOSInstall;
+      slot.insertBefore(btn, slot.firstChild);
+    }, 1000);
+  }
+});
+function showIOSInstall() {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = '<div style="background:linear-gradient(180deg,#1c1c28,#0a0a0f);border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:28px;max-width:380px;width:100%"><div style="font-size:40px;text-align:center;margin-bottom:14px">📱</div><h2 style="font-size:20px;font-weight:700;margin:0 0 16px;text-align:center;color:#fff">Instalar PercuSignal</h2><div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px"><div style="display:flex;align-items:flex-start;gap:12px;padding:12px;background:rgba(255,255,255,0.04);border-radius:12px"><div style="width:28px;height:28px;border-radius:50%;background:#0a84ff;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex-shrink:0">1</div><div style="flex:1;font-size:13px;color:rgba(255,255,255,0.85);line-height:1.5">Tocá el ícono <strong>Compartir</strong> ↑ en Safari</div></div><div style="display:flex;align-items:flex-start;gap:12px;padding:12px;background:rgba(255,255,255,0.04);border-radius:12px"><div style="width:28px;height:28px;border-radius:50%;background:#0a84ff;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex-shrink:0">2</div><div style="flex:1;font-size:13px;color:rgba(255,255,255,0.85);line-height:1.5">Buscá <strong>"Agregar a inicio"</strong></div></div><div style="display:flex;align-items:flex-start;gap:12px;padding:12px;background:rgba(255,255,255,0.04);border-radius:12px"><div style="width:28px;height:28px;border-radius:50%;background:#0a84ff;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex-shrink:0">3</div><div style="flex:1;font-size:13px;color:rgba(255,255,255,0.85);line-height:1.5">Tocá <strong>"Agregar"</strong> arriba a la derecha</div></div></div><button id="iosOk" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;font-size:14px;font-weight:600;cursor:pointer">Entendido</button></div>';
+  document.body.appendChild(modal);
+  modal.querySelector('#iosOk').onclick = () => modal.remove();
+  modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+}
+</script>
+
+<script>
+// ── HINT BAR (Fase 1 v2) ─────────────────────────────────────────────────────
+(function() {
+  var LS_KEY = 'percuHintDismissed';
+
+  var percuHint = {
+    _cam: false,
+    _hand: false,
+    _content: false,
+
+    _el: function(id) { return document.getElementById(id); },
+
+    render: function() {
+      var bar  = this._el('esHintBar');
+      if (!bar) return;
+
+      // Si el usuario cerró la barra o ya hay contenido, ocultarla
+      if (localStorage.getItem(LS_KEY) || this._content) {
+        bar.classList.add('is-hidden');
+        return;
+      }
+      bar.classList.remove('is-hidden');
+
+      var dot  = this._el('esHintDot');
+      var txt  = this._el('esHintText');
+      var cta  = this._el('esHintCta');
+
+      if (!this._cam) {
+        bar.className = 'es-hint-bar';
+        if (txt) txt.textContent = 'Activá la cámara para empezar a capturar ritmos';
+        if (cta) cta.style.display = 'inline-block';
+      } else if (!this._hand) {
+        bar.className = 'es-hint-bar es-hint-bar--cam';
+        if (txt) txt.textContent = 'Cámara activa — mostrá tu mano y seleccioná un instrumento';
+        if (cta) cta.style.display = 'none';
+      } else {
+        bar.className = 'es-hint-bar es-hint-bar--ready';
+        if (txt) txt.textContent = 'Seña detectada — presioná Capturar para grabar el compás';
+        if (cta) cta.style.display = 'none';
+      }
+    },
+
+    dismiss: function() {
+      localStorage.setItem(LS_KEY, '1');
+      var bar = this._el('esHintBar');
+      if (bar) bar.classList.add('is-hidden');
+    },
+
+    setCameraActive: function(v) { this._cam = v; this.render(); },
+    setHandDetected:  function(v) { this._hand = v; this.render(); },
+    setHasContent:    function(v) { this._content = v; this.render(); }
+  };
+
+  window.percuHint = percuHint;
+
+  window.addEventListener('load', function() {
+    // Parchear startCamera
+    if (typeof startCamera === 'function') {
+      var _origStart = startCamera;
+      window.startCamera = async function() {
+        try {
+          await _origStart.apply(this, arguments);
+          percuHint.setCameraActive(true);
+        } catch(e) {
+          percuHint.setCameraActive(false);
+          throw e;
+        }
+      };
+    }
+
+    // Observar iHand para detectar mano
+    var iHand = document.getElementById('iHand');
+    if (iHand) {
+      new MutationObserver(function() {
+        var txt = iHand.textContent.trim();
+        percuHint.setHandDetected(txt !== '' && txt !== '—' && txt !== '0');
+      }).observe(iHand, { childList: true, characterData: true, subtree: true });
+    }
+
+    // Parchear captureCurrentPattern
+    if (typeof captureCurrentPattern === 'function') {
+      var _origCapture = captureCurrentPattern;
+      window.captureCurrentPattern = function() {
+        _origCapture.apply(this, arguments);
+        setTimeout(function() {
+          var iM = document.getElementById('iMeasures');
+          percuHint.setHasContent(iM ? parseInt(iM.textContent, 10) > 0 : false);
+        }, 100);
+      };
+    }
+
+    // Parchear clearScore
+    if (typeof clearScore === 'function') {
+      var _origClear = clearScore;
+      window.clearScore = function() {
+        _origClear.apply(this, arguments);
+        percuHint.setHasContent(false);
+      };
+    }
+
+    percuHint.render();
+  });
+})();
+</script>
+</body>
+</html>
