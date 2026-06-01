@@ -191,6 +191,135 @@ function injectTourCSS() {
 
 window.addEventListener('resize', () => { if (tourTooltipEl) renderTourStep(); });
 
+// ─────────────────────────────────────────────
+//  TUTORIALES CONTEXTUALES
+// ─────────────────────────────────────────────
+
+const TUTORIALS = {
+  gesture: {
+    title: '¿Cómo usar las señas?',
+    icon: '✋',
+    steps: [
+      { title: 'Posicioná tu mano', desc: 'Mostrá la palma a la cámara a unos 30–50 cm. Buscá buena iluminación — el sistema necesita ver los dedos con claridad.' },
+      { title: 'Cada dedo es una nota', desc: 'El índice, mayor, anular y meñique corresponden a las 4 notas del patrón. Pulgar no se usa. Dedo levantado = nota ON, dedo bajo = silencio.' },
+      { title: 'Formá el patrón', desc: 'Combiná qué dedos están arriba para armar el ritmo que querés capturar. Podés cambiarlo en tiempo real mientras la cámara está activa.' },
+      { title: 'Capturá cuando estés listo', desc: 'Cuando el pentagrama muestre el patrón correcto, apretá Capturar. Se guarda ese compás en la pista del instrumento seleccionado.' },
+    ]
+  },
+  voice: {
+    title: '¿Cómo usar comandos de voz?',
+    icon: '🎤',
+    steps: [
+      { title: 'Activar el micrófono', desc: 'Apretá el botón "Voz" en la toolbar. El navegador te va a pedir permiso para usar el micrófono. Aceptá para continuar.' },
+      { title: 'Comandos disponibles', desc: '"Capturar" — graba el compás actual. "Limpiar" — borra todo. "Tocar" — reproduce la partitura. "Stop" — detiene la reproducción.' },
+      { title: 'Tip de uso', desc: 'Hablá claro y cerca del micrófono. El reconocimiento es local en el navegador, sin conexión a servidores externos.' },
+    ]
+  }
+};
+
+function showTutorial(type) {
+  const tut = TUTORIALS[type];
+  if (!tut) { startProductTour(); return; }
+
+  // Si ya hay un modal abierto, lo cerramos
+  document.getElementById('tutorialModal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'tutorialModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:20px;animation:tourFadeIn .25s';
+
+  let currentStep = 0;
+
+  function render() {
+    const step = tut.steps[currentStep];
+    modal.innerHTML = `
+      <div style="background:linear-gradient(180deg,#1c1c28,#0a0a0f);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:28px 24px;max-width:360px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,0.6);animation:tourSlideIn .3s cubic-bezier(0.34,1.56,0.64,1)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:24px">${tut.icon}</span>
+            <div style="font-size:14px;font-weight:600;color:#fff">${tut.title}</div>
+          </div>
+          <button id="tutClose" style="background:transparent;border:none;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer;line-height:1;padding:4px">✕</button>
+        </div>
+        <div style="font-size:11px;color:#0a84ff;font-weight:600;letter-spacing:0.5px;margin-bottom:8px">PASO ${currentStep+1} DE ${tut.steps.length}</div>
+        <div style="font-size:16px;font-weight:600;color:#fff;margin-bottom:8px;letter-spacing:-0.2px">${step.title}</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.7);line-height:1.55;margin-bottom:20px">${step.desc}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;gap:4px">
+            ${tut.steps.map((_, i) => `<div style="width:${i===currentStep?'18':'6'}px;height:6px;border-radius:3px;background:${i===currentStep?'#0a84ff':'rgba(255,255,255,0.15)'};transition:width .3s"></div>`).join('')}
+          </div>
+          <div style="display:flex;gap:6px">
+            ${currentStep > 0 ? `<button id="tutBack" style="padding:7px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:rgba(255,255,255,0.85);font-size:12px;cursor:pointer;font-family:inherit">Atrás</button>` : ''}
+            <button id="tutNext" style="padding:7px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 3px 10px rgba(10,132,255,0.3)">${currentStep===tut.steps.length-1?'Entendido ✓':'Siguiente →'}</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    modal.querySelector('#tutClose').onclick = () => modal.remove();
+    modal.querySelector('#tutNext').onclick  = () => {
+      if (currentStep < tut.steps.length - 1) { currentStep++; render(); }
+      else modal.remove();
+    };
+    modal.querySelector('#tutBack')?.addEventListener('click', () => { currentStep--; render(); });
+
+    // Cerrar al click fuera
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+  }
+
+  injectTourCSS();
+  render();
+  document.body.appendChild(modal);
+}
+
+function showTutorialMenu() {
+  document.getElementById('tutorialMenuModal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'tutorialMenuModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:20px;animation:tourFadeIn .25s';
+
+  modal.innerHTML = `
+    <div style="background:linear-gradient(180deg,#1c1c28,#0a0a0f);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:28px 24px;max-width:340px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,0.6);animation:tourSlideIn .3s cubic-bezier(0.34,1.56,0.64,1)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div style="font-size:15px;font-weight:600;color:#fff">Ayuda y tutoriales</div>
+        <button id="tmClose" style="background:transparent;border:none;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer;line-height:1;padding:4px">✕</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button id="tm-gesture" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-family:inherit;cursor:pointer;text-align:left;transition:background .15s">
+          <span style="font-size:22px">✋</span>
+          <div><div style="font-size:13px;font-weight:600">Cómo usar las señas</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px">Dedos, patrones y captura</div></div>
+        </button>
+        <button id="tm-voice" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-family:inherit;cursor:pointer;text-align:left;transition:background .15s">
+          <span style="font-size:22px">🎤</span>
+          <div><div style="font-size:13px;font-weight:600">Comandos de voz</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px">Capturar, tocar, limpiar por voz</div></div>
+        </button>
+        <button id="tm-tour" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-family:inherit;cursor:pointer;text-align:left;transition:background .15s">
+          <span style="font-size:22px">🗺️</span>
+          <div><div style="font-size:13px;font-weight:600">Tour completo de la app</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px">Recorrido paso a paso por todo</div></div>
+        </button>
+      </div>
+    </div>
+  `;
+
+  injectTourCSS();
+  document.body.appendChild(modal);
+
+  modal.querySelector('#tmClose').onclick    = () => modal.remove();
+  modal.querySelector('#tm-gesture').onclick = () => { modal.remove(); showTutorial('gesture'); };
+  modal.querySelector('#tm-voice').onclick   = () => { modal.remove(); showTutorial('voice'); };
+  modal.querySelector('#tm-tour').onclick    = () => {
+    modal.remove();
+    localStorage.removeItem('tour_done');
+    startProductTour();
+  };
+  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+}
+
+// Exponer globalmente
+window.showTutorial     = showTutorial;
+window.showTutorialMenu = showTutorialMenu;
+
 // Exponer globalmente
 window.startProductTour = startProductTour;
 window.skipTour         = skipTour;
