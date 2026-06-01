@@ -1,6 +1,6 @@
 // app/src/main.js
 // Punto de entrada de PercuSignal — Fase 4.3
-
+import './styles.css';
 // ── Core (sin dependencias externas) ──
 import './state.js';
 
