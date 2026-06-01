@@ -38,6 +38,7 @@ export function setUser(u) {
   if (u) localStorage.setItem('percusignal_user', JSON.stringify(u));
   else   localStorage.removeItem('percusignal_user');
   try { refreshUIForCurrentPlan(); } catch (e) { console.warn('UI refresh:', e); }
+  try { window.renderPlanBadge?.(); } catch (e) {}
 }
 
 // ── Plan activo ──

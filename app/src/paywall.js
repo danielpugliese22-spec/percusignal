@@ -138,7 +138,7 @@ export async function showUserPanel() {
   `;
   document.body.appendChild(modal);
   modal.querySelector('#up-close-btn').onclick  = () => modal.remove();
-  modal.querySelector('#up-logout-btn').onclick = () => { setUser(null); modal.remove(); notify('Sesión cerrada', 'info'); };
+  modal.querySelector('#up-logout-btn').onclick = () => { setUser(null); modal.remove(); notify('Sesión cerrada', 'info'); window.renderPlanBadge?.(); };
   modal.querySelector('#up-upgrade-btn')?.addEventListener('click', () => { modal.remove(); startCheckout('premium'); });
   modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 }
