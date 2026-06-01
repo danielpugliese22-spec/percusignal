@@ -95,7 +95,13 @@ export function renderPlanBadge() {
   };
 
   el.style.cssText = `display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;${styles[plan] || styles.free}`;
-  el.textContent = plan === 'free' ? 'Free' : plan.charAt(0).toUpperCase() + plan.slice(1);
+  const u2 = getUser();
+const initial = u2?.email ? u2.email[0].toUpperCase() : '';
+if (plan === 'free') {
+  el.innerHTML = initial ? `<span style="margin-right:4px">${initial}</span>Free` : 'Free';
+} else {
+  el.innerHTML = `<span style="margin-right:4px">${initial}</span>⭐ ${plan.charAt(0).toUpperCase() + plan.slice(1)}`;
+}
   el.title = u?.email || '';
   el.onclick = () => showUserPanel();
 }
