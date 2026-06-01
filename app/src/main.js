@@ -68,13 +68,14 @@ async function _syncPlanInBackground() {
     const planChanged   = data.plan && data.plan !== user.plan;
     const expiryChanged = data.active_until !== user.active_until;
 
-    if (planChanged || expiryChanged) {
-      window.setUser?.({ email: user.email, plan: data.plan || 'free', active_until: data.active_until || null });
-      if (planChanged && data.plan !== 'free') {
-        window.notify?.('Tu plan ' + data.plan.toUpperCase() + ' está activo ✨', 'success', 4000);
-      }
-    }
+if (planChanged || expiryChanged) {
+  window.setUser?.({ email: user.email, plan: data.plan || 'free', active_until: data.active_until || null });
+  window.renderPlanBadge?.();
+  if (planChanged && data.plan !== 'free') {
+    window.notify?.('Tu plan ' + data.plan.toUpperCase() + ' está activo ✨', 'success', 4000);
+  }
+}
   } catch(e) { console.warn('sync plan:', e); }
 }
-
+window._syncPlanInBackground = _syncPlanInBackground;
 import './audio.js';
