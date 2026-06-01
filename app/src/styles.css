@@ -943,3 +943,37 @@ input[type=range].bpm-slider::-webkit-slider-thumb {
 }
 .btn-cam-stop.visible { display: flex; }
 
+/* ── Mejoras UX: label Compás + botón Ayuda prominente ── */
+
+/* Wrapper con label flotante encima del selector de compás */
+.tb-labeled-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+.tb-label {
+  font-size: 9px;
+  font-family: var(--mono);
+  color: var(--label3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding-left: 2px;
+  user-select: none;
+}
+
+/* Botón Ayuda prominente */
+.help-btn--prominent {
+  display: flex !important;
+  align-items: center;
+  gap: 5px;
+  border-color: rgba(255,159,10,0.35) !important;
+  color: var(--orange) !important;
+}
+.help-btn--prominent svg {
+  stroke: var(--orange);
+}
+.help-btn--prominent:hover {
+  background: rgba(255,159,10,0.1) !important;
+  border-color: rgba(255,159,10,0.6) !important;
+}

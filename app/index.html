@@ -93,12 +93,15 @@
     <div class="toolbar">
 
       <!-- Compás -->
+      <div class="tb-labeled-group">
+        <span class="tb-label">Compás</span>
       <div class="seg-control" id="segCompas">
         <button class="seg-btn" onclick="setCompas('2/4');segActive('segCompas',this)">2/4</button>
         <button class="seg-btn active" onclick="setCompas('4/4');segActive('segCompas',this)">4/4</button>
         <button class="seg-btn" onclick="setCompas('3/4');segActive('segCompas',this)">3/4</button>
         <button class="seg-btn" onclick="setCompas('6/8');segActive('segCompas',this)">6/8</button>
         <button class="seg-btn" onclick="setCompas('3/3');segActive('segCompas',this)">3/3</button>
+      </div>
       </div>
 
       <!-- BPM -->
@@ -150,7 +153,7 @@
       <div class="tb-group">
         <button class="ctrl-chip" onclick="document.getElementById('signsPanel').style.display='block';renderSignsCatalog()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Señas</button>
         <button class="ctrl-chip danger" onclick="clearScore()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Limpiar</button>
-        <button class="ctrl-chip help-btn" onclick="showTutorialMenu()" title="Tutoriales">?</button>
+        <button class="ctrl-chip help-btn help-btn--prominent" onclick="showTutorialMenu()" title="Tutoriales"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Ayuda</button>
       </div>
 
     </div>
