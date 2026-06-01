@@ -53,7 +53,7 @@
         <div class="hb-note" id="hbNote">—</div>
       </div>
       <!-- Botón desactivar cámara (visible solo cuando está activa) -->
-      <button class="btn-cam-stop" id="btnStopCam" onclick="stopCamera()" aria-label="Desactivar cámara">
+      <button class="btn-cam-stop" id="btnStopCam" aria-label="Desactivar cámara">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         Desactivar
       </button>
@@ -63,7 +63,7 @@
         <div style="font-size:14px;font-weight:600;color:#fff;margin-top:2px">PercuSignal</div>
         <div class="cam-hint" style="font-size:11px">Mostrá tu mano a la cámara<br>para generar ritmos</div>
         <button class="btn-cam" id="btnStart" style="margin-top:4px">Activar cámara</button>
-        <button onclick="showTutorial('gesture')" style="background:transparent;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);padding:5px 12px;border-radius:980px;font-size:11px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ¿Cómo funciona?</button>
+        <button data-action="tutorial" data-tutorial="gesture" style="background:transparent;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);padding:5px 12px;border-radius:980px;font-size:11px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ¿Cómo funciona?</button>
         <div class="cam-hint" style="font-size:10px;margin-top:auto">Requiere permiso de cámara</div>
       </div>
     </div>
@@ -96,64 +96,64 @@
       <div class="tb-labeled-group">
         <span class="tb-label">Compás</span>
       <div class="seg-control" id="segCompas">
-        <button class="seg-btn" onclick="setCompas('2/4');segActive('segCompas',this)">2/4</button>
-        <button class="seg-btn active" onclick="setCompas('4/4');segActive('segCompas',this)">4/4</button>
-        <button class="seg-btn" onclick="setCompas('3/4');segActive('segCompas',this)">3/4</button>
-        <button class="seg-btn" onclick="setCompas('6/8');segActive('segCompas',this)">6/8</button>
-        <button class="seg-btn" onclick="setCompas('3/3');segActive('segCompas',this)">3/3</button>
+        <button class="seg-btn" data-val="2/4">2/4</button>
+        <button class="seg-btn active" data-val="4/4">4/4</button>
+        <button class="seg-btn" data-val="3/4">3/4</button>
+        <button class="seg-btn" data-val="6/8">6/8</button>
+        <button class="seg-btn" data-val="3/3">3/3</button>
       </div>
       </div>
 
       <!-- BPM -->
       <div class="bpm-pill">
-        <button class="bpm-step" onclick="stepBpm(-5)">−</button>
+        <button class="bpm-step" data-action="bpm-step" data-delta="-5">−</button>
         <input type="range" class="bpm-slider" id="bpmSlider" min="40" max="240" value="100"
-          oninput="setBpm(this.value)">
+         >
         <div class="bpm-num" id="bpmValue">100</div>
-        <button class="bpm-step" onclick="stepBpm(+5)">+</button>
+        <button class="bpm-step" data-action="bpm-step" data-delta="5">+</button>
       </div>
       <div class="bpm-presets">
-        <button class="bpm-preset" onclick="setBpm(60)">60</button>
-        <button class="bpm-preset" onclick="setBpm(80)">80</button>
-        <button class="bpm-preset active" onclick="setBpm(100)">100</button>
-        <button class="bpm-preset" onclick="setBpm(120)">120</button>
-        <button class="bpm-preset" onclick="setBpm(160)">160</button>
+        <button class="bpm-preset" data-action="bpm-preset" data-bpm="60">60</button>
+        <button class="bpm-preset" data-action="bpm-preset" data-bpm="80">80</button>
+        <button class="bpm-preset active" data-action="bpm-preset" data-bpm="100">100</button>
+        <button class="bpm-preset" data-action="bpm-preset" data-bpm="120">120</button>
+        <button class="bpm-preset" data-action="bpm-preset" data-bpm="160">160</button>
       </div>
 
       <div class="tb-spacer"></div>
 
       <!-- Grupo: Captura -->
       <div class="tb-group">
-        <button class="ctrl-chip help-btn" onclick="showTutorial('voice')" title="Cómo usar voz">?</button>
-        <button class="ctrl-chip" id="btnVoice" onclick="toggleVoice()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg> Voz</button>
-        <button class="ctrl-chip" id="btnCapture" onclick="captureCurrentPattern()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Capturar</button>
+        <button class="ctrl-chip help-btn" data-action="tutorial" data-tutorial="voice" title="Cómo usar voz">?</button>
+        <button class="ctrl-chip" id="btnVoice"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg> Voz</button>
+        <button class="ctrl-chip" id="btnCapture"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Capturar</button>
       </div>
 
       <div class="tb-divider"></div>
 
       <!-- Grupo: Reproducción -->
       <div class="tb-group">
-        <button class="ctrl-chip" id="btnPlay" onclick="playScore()" style="background:var(--green);color:#000;border-color:var(--green)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><polygon points="5 3 19 12 5 21 5 3"/></svg> Tocar</button>
-        <button class="ctrl-chip" id="btnStop" onclick="stopScore()" style="display:none;background:var(--red);color:#fff;border-color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="3" y="3" width="18" height="18" rx="2"/></svg> Stop</button>
+        <button class="ctrl-chip" id="btnPlay" style="background:var(--green);color:#000;border-color:var(--green)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><polygon points="5 3 19 12 5 21 5 3"/></svg> Tocar</button>
+        <button class="ctrl-chip" id="btnStop" style="display:none;background:var(--red);color:#fff;border-color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="3" y="3" width="18" height="18" rx="2"/></svg> Stop</button>
       </div>
 
       <div class="tb-divider"></div>
 
       <!-- Grupo: Sesión -->
       <div class="tb-group">
-        <button class="ctrl-chip" onclick="shareComposition()" title="Compartir por link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Compartir</button>
-        <button class="ctrl-chip" onclick="saveSession()" title="Guardar sesión"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar</button>
-        <button class="ctrl-chip" onclick="loadSession()" title="Cargar sesión"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Cargar</button>
-        <button class="ctrl-chip" onclick="exportAudio()" title="Exportar audio WAV"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar</button>
+        <button class="ctrl-chip" data-action="share" title="Compartir por link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Compartir</button>
+        <button class="ctrl-chip" data-action="save-session" title="Guardar sesión"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar</button>
+        <button class="ctrl-chip" data-action="load-session" title="Cargar sesión"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Cargar</button>
+        <button class="ctrl-chip" data-action="export-audio" title="Exportar audio WAV"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar</button>
       </div>
 
       <div class="tb-divider"></div>
 
       <!-- Grupo: Catálogo + Limpiar -->
       <div class="tb-group">
-        <button class="ctrl-chip" onclick="document.getElementById('signsPanel').style.display='block';renderSignsCatalog()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Señas</button>
-        <button class="ctrl-chip danger" onclick="clearScore()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Limpiar</button>
-        <button class="ctrl-chip help-btn help-btn--prominent" onclick="showTutorialMenu()" title="Tutoriales"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Ayuda</button>
+        <button class="ctrl-chip" data-action="open-signs"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Señas</button>
+        <button class="ctrl-chip danger" data-action="clear-score"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Limpiar</button>
+        <button class="ctrl-chip help-btn help-btn--prominent" data-action="tutorial-menu" title="Tutoriales"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Ayuda</button>
       </div>
 
     </div>
@@ -161,8 +161,8 @@
     <!-- Insert banner -->
     <div class="insert-banner" id="insertBanner">
       <span>Mostrá la seña → capturá <strong id="insertAfterNum"></strong></span>
-      <button class="ctrl-chip active" onclick="confirmInsert()" style="background:var(--blue);color:#fff;border-color:var(--blue)">✓ Aquí</button>
-      <button class="ctrl-chip" onclick="cancelInsert()">✕</button>
+      <button class="ctrl-chip active" data-action="confirm-insert" style="background:var(--blue);color:#fff;border-color:var(--blue)">✓ Aquí</button>
+      <button class="ctrl-chip" data-action="cancel-insert">✕</button>
     </div>
 
     <!-- Pentagrama -->
@@ -175,9 +175,9 @@
         <span class="es-hint-bar__text" id="esHintText">Activá la cámara para empezar a capturar ritmos</span>
         <button class="es-hint-bar__cta" id="esHintCta"
                 style="display:none"
-                onclick="document.getElementById('btnStart').click()">Activar →</button>
+               >Activar →</button>
         <button class="es-hint-bar__close" id="esHintClose"
-                onclick="percuHint.dismiss()"
+               
                 title="No mostrar más">✕</button>
       </div>
 
@@ -209,7 +209,7 @@
       <div style="max-width:900px;margin:0 auto">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
           <div style="font-size:20px;font-weight:600">Señas del libro</div>
-          <button onclick="document.getElementById('signsPanel').style.display='none'"
+          <button data-action="close-signs"
             style="padding:8px 16px;border-radius:980px;border:none;background:var(--fill1);color:var(--label1);font-size:14px;cursor:pointer">✕ Cerrar</button>
         </div>
         <div id="signsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px"></div>
@@ -220,7 +220,11 @@
 
 <!-- percusignal Fase 4.3 — módulos JS externalizados -->
 <!-- audio.js sigue como script clásico (depende de window.state) -->
+<script type="module" src="/src/audio.js"></script>
+<script type="module" src="/src/auth.js"></script>
 <script type="module" src="/src/main.js"></script>
+
+
 
 </body>
 </html>
