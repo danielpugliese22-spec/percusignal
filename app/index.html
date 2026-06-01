@@ -125,16 +125,16 @@
       <!-- Grupo: Captura -->
       <div class="tb-group">
         <button class="ctrl-chip help-btn" data-action="tutorial" data-tutorial="voice" title="Cómo usar voz">?</button>
-        <button class="ctrl-chip" id="btnVoice"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg> Voz</button>
-        <button class="ctrl-chip" id="btnCapture"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Capturar</button>
+        <button class="ctrl-chip" id="btnVoice" onclick="toggleVoice()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg> Voz</button>
+        <button class="ctrl-chip" id="btnCapture" onclick="captureCurrentPattern()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Capturar</button>
       </div>
 
       <div class="tb-divider"></div>
 
       <!-- Grupo: Reproducción -->
       <div class="tb-group">
-        <button class="ctrl-chip" id="btnPlay" style="background:var(--green);color:#000;border-color:var(--green)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><polygon points="5 3 19 12 5 21 5 3"/></svg> Tocar</button>
-        <button class="ctrl-chip" id="btnStop" style="display:none;background:var(--red);color:#fff;border-color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="3" y="3" width="18" height="18" rx="2"/></svg> Stop</button>
+        <button class="ctrl-chip" id="btnPlay" onclick="playScore()" style="background:var(--green);color:#000;border-color:var(--green)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><polygon points="5 3 19 12 5 21 5 3"/></svg> Tocar</button>
+        <button class="ctrl-chip" id="btnStop" onclick="stopScore()" style="display:none;background:var(--red);color:#fff;border-color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="3" y="3" width="18" height="18" rx="2"/></svg> Stop</button>
       </div>
 
       <div class="tb-divider"></div>
