@@ -78,4 +78,5 @@ if (planChanged || expiryChanged) {
   } catch(e) { console.warn('sync plan:', e); }
 }
 window._syncPlanInBackground = _syncPlanInBackground;
+window.addEventListener('percuLoginSuccess', () => _syncPlanInBackground());
 import './audio.js';

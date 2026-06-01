@@ -96,6 +96,7 @@ export async function showLogin() {
   if (email && email.includes('@')) {
     setUser({ email, plan: 'free' });
     notify('Sesión iniciada como ' + email, 'success');
+    setTimeout(() => window.dispatchEvent(new CustomEvent('percuLoginSuccess')), 100);
   }
 }
 
