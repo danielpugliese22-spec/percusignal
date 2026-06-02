@@ -52,7 +52,7 @@ function playCampana(time, velocity=1.0) {
   [800,1600,2400,3200].forEach((freq,i) => {
     const o=ctx.createOscillator(), e=ctx.createGain();
     o.type='sine'; o.frequency.value=freq;
-    const decay = 1.2 - i*0.2;
+    const decay = 0.4 - i*0.06;
     e.gain.setValueAtTime(1/(i+1),time); e.gain.exponentialRampToValueAtTime(0.001,time+decay);
     o.connect(e); e.connect(master); o.start(time); o.stop(time+decay+0.05);
   });
@@ -168,7 +168,7 @@ async function playSample(instrId, time, velocity=1.0) {
     const src = state.audioCtx.createBufferSource();
     src.buffer = buf;
     const gain = state.audioCtx.createGain();
-    const volMap = {conga:1.0, surdo:1.1, campana:0.7, clave:0.85, cajon:0.95, semillas:0.8};
+    const volMap = {conga:1.0, surdo:2.0, campana:0.7, clave:0.85, cajon:0.95, semillas:0.8};
     gain.gain.value = velocity * (volMap[instrId] || 1.0) * (volumeState[instrId] ?? 1.0);
     src.connect(gain);
     gain.connect(state.audioCtx.destination);
@@ -2045,7 +2045,7 @@ async function exportAudio(format = 'wav') {
     const ctx = new OfflineAudioContext(2, Math.ceil(totalDuration * sampleRate), sampleRate);
     
     // 4. Schedulear cada nota
-    const volMap = {conga:1.0, surdo:1.1, campana:0.7, clave:0.85, cajon:0.95, semillas:0.8};
+    const volMap = {conga:1.0, surdo:2.2, campana:0.7, clave:0.85, cajon:0.95, semillas:0.8};
     
     for(let mi = 0; mi < maxLen; mi++) {
       const mStart = mi * beatsPerMeasure * beatDur;
