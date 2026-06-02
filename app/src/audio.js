@@ -155,7 +155,7 @@ async function loadSampleBuffer(instrId) {
   if(instrId in _sampleBuffers) return _sampleBuffers[instrId]; // null = usar synth
   initAudio();
   try {
-    const res = await fetch(`/assets/audio/${instrId}.wav`);
+    const res = await fetch(`/app/assets/audio/${instrId}.wav`);
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const arr = await res.arrayBuffer();
     _sampleBuffers[instrId] = await state.audioCtx.decodeAudioData(arr);
