@@ -134,7 +134,7 @@ const _sampleBuffers = {};
 async function loadSampleBuffer(instrId) {
   if(_sampleBuffers[instrId]) return _sampleBuffers[instrId];
   initAudio();
-  const res = await fetch(`/app/assets/audio/${instrId}.wav`);
+  const res = await fetch(`/app/audio/${instrId}.wav`);
   const arr = await res.arrayBuffer();
   _sampleBuffers[instrId] = await state.audioCtx.decodeAudioData(arr);
   return _sampleBuffers[instrId];
@@ -167,7 +167,7 @@ let _congaBuffer = null;  // cached decoded AudioBuffer
 async function loadCongaBuffer() {
   if(_congaBuffer) return _congaBuffer;
   initAudio();
-  const res = await fetch('/app/assets/audio/conga.wav');
+  const res = await fetch('/app/audio/conga.wav');
   const arr = await res.arrayBuffer();
   _congaBuffer = await state.audioCtx.decodeAudioData(arr);
   return _congaBuffer;
