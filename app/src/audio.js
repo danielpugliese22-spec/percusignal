@@ -2199,7 +2199,7 @@ window.insertAfterMeasure   = insertAfterMeasure;
 window.confirmInsert        = confirmInsert;
 window.cancelInsert         = cancelInsert;
 window.prewarmAudio         = prewarmAudio;
- 
+window.confirmVoiceOnboarding = confirmVoiceOnboarding; 
 // activeInstrId — leído y escrito por otros módulos
 Object.defineProperty(window, 'activeInstrId', {
   get: () => activeInstrId,
