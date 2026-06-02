@@ -52,7 +52,7 @@ function playCampana(time, velocity=1.0) {
   [800,1600,2400,3200].forEach((freq,i) => {
     const o=ctx.createOscillator(), e=ctx.createGain();
     o.type='sine'; o.frequency.value=freq;
-    const decay = 0.4 - i*0.06;
+    const decay = 0.2 - i*0.03;
     e.gain.setValueAtTime(1/(i+1),time); e.gain.exponentialRampToValueAtTime(0.001,time+decay);
     o.connect(e); e.connect(master); o.start(time); o.stop(time+decay+0.05);
   });
@@ -90,7 +90,7 @@ function playCajon(time, velocity=1.0) {
   const d=buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
   const ns=ctx.createBufferSource(), nf=ctx.createBiquadFilter(), ne=ctx.createGain();
   nf.type='highpass'; nf.frequency.value=3500;
-  ne.gain.setValueAtTime(0.6,time); ne.gain.exponentialRampToValueAtTime(0.001,time+0.08);
+  ne.gain.setValueAtTime(0.25,time); ne.gain.exponentialRampToValueAtTime(0.001,time+0.08);
   ns.buffer=buf; ns.connect(nf); nf.connect(ne); ne.connect(master); ns.start(time);
 }
 
@@ -1420,10 +1420,9 @@ function toggleVoice() {
   if(!voiceRecognition) return;
 
   // Primera vez: mostrar onboarding
-  if(!voiceActive && !localStorage.getItem('voice_onboarded')) {
-    showVoiceOnboarding();
-    return;
-  }
+if(!voiceActive && !localStorage.getItem('voice_onboarded')) {
+    localStorage.setItem('voice_onboarded', '1');
+}
 
   voiceActive = !voiceActive;
   updateVoiceUI();
