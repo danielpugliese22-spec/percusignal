@@ -176,7 +176,7 @@ async function playSample(instrId, time, velocity=1.0) {
   if(muteState[instrId]) return;
   initAudio();
   if(state.audioCtx.state==='suspended') state.audioCtx.resume();
-  const volMap = {conga:1.0, surdo:1.1, campana:0.7, clave:0.85, cajon:1.2, semillas:0.8};
+  const volMap = {conga:1.0, surdo:1.1, campana:0.7, clave:0.85, cajon:1.8, semillas:0.8};
   const vol = velocity * (volMap[instrId] || 1.0) * (volumeState[instrId] ?? 1.0);
   try {
     const buf = await loadSampleBuffer(instrId);
@@ -343,7 +343,7 @@ async function exportAudio(format = 'wav') {
     const ctx = new OfflineAudioContext(2, Math.ceil(totalDuration * sampleRate), sampleRate);
     
     // 4. Schedulear cada nota
-    const volMap = {conga:1.0, surdo:1.1, campana:0.7, clave:0.85, cajon:1.2, semillas:0.8};
+    const volMap = {conga:1.0, surdo:1.1, campana:0.7, clave:0.85, cajon:1.8, semillas:0.8};
     
     for(let mi = 0; mi < maxLen; mi++) {
       const mStart = mi * beatsPerMeasure * beatDur;
