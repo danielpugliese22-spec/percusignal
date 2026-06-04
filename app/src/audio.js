@@ -202,8 +202,6 @@ async function playSample(instrId, time, velocity=1.0) {
   }
 }
 
-}
-
 // Sonido de captura neutro (snap sintético, sin sample del quinto)
 function playCaptureSnap() {
   try {
