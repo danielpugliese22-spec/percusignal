@@ -1,5 +1,5 @@
 // PercuSignal Service Worker — soporte offline + actualizaciones
-const VERSION = 'v1.0.2';
+const VERSION = 'v1.0.3';
 const CACHE_NAME = `percusignal-${VERSION}`;
 
 // Recursos críticos (se cachean al instalar)
@@ -77,7 +77,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then(c => c.put(event.request, copy));
         }
         return fresh;
-      });
+      }).catch(() => new Response('', { status: 408 }));
     })
   );
 });
