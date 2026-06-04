@@ -1,5 +1,5 @@
 // PercuSignal Service Worker — soporte offline + actualizaciones
-const VERSION = 'v1.0.1';
+const VERSION = 'v1.0.2';
 const CACHE_NAME = `percusignal-${VERSION}`;
 
 // Recursos críticos (se cachean al instalar)
@@ -7,10 +7,10 @@ const CORE_ASSETS = [
   '/',
   '/app/',
   '/manifest.json',
-  '/assets/logo.png',
-  '/assets/icon-192.png',
-  '/assets/icon-512.png',
-  '/assets/favicon.png'
+  '/app/logo.png',
+  '/app/icon-192.png',
+  '/app/icon-512.png',
+  '/app/favicon.png'
 ];
 
 // Install: precachear el core
@@ -42,6 +42,9 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET
   if (event.request.method !== 'GET') return;
 
+  // Skip chrome-extension y otros esquemas no http
+  if (!url.protocol.startsWith('http')) return;
+
   // API calls: siempre network, no cachear
   if (url.pathname.startsWith('/api/')) return;
 
@@ -50,7 +53,6 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request)
         .then(res => {
-          // Cachear copia para offline
           const copy = res.clone();
           caches.open(CACHE_NAME).then(c => c.put(event.request, copy));
           return res;
@@ -64,7 +66,6 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) {
-        // Fetch en background para actualizar el cache
         fetch(event.request).then(fresh => {
           if (fresh.ok) caches.open(CACHE_NAME).then(c => c.put(event.request, fresh));
         }).catch(() => {});
