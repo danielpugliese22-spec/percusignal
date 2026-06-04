@@ -1,5 +1,5 @@
 // PercuSignal Service Worker — soporte offline + actualizaciones
-const VERSION = 'v1.0.0';
+const VERSION = 'v1.0.1';
 const CACHE_NAME = `percusignal-${VERSION}`;
 
 // Recursos críticos (se cachean al instalar)
