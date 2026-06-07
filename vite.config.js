@@ -1,5 +1,33 @@
 import { defineConfig } from 'vite';
-import { copyFileSync, mkdirSync } from 'fs';
+import { copyFileSync, mkdirSync, readFileSync } from 'fs';
+import { resolve } from 'path';
+
+function serveLanding() {
+  return {
+    name: 'serve-landing',
+    configureServer(server) {
+      const handler = (req, res, next) => {
+        if (req.url === '/app' || req.url === '/app?') {
+          res.writeHead(301, { Location: '/app/' });
+          res.end();
+          return;
+        }
+        if (req.url === '/' || req.url === '/index.html') {
+          try {
+            const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf-8');
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.statusCode = 200;
+            res.end(html);
+            return;
+          } catch(e) {}
+        }
+        next();
+      };
+      // Insertar al inicio del stack para correr ANTES del redirect de base /app/
+      server.middlewares.stack.unshift({ route: '', handle: handler });
+    }
+  };
+}
 
 function copyRootFiles() {
   return {
@@ -29,6 +57,6 @@ export default defineConfig({
     outDir: '../dist/app',
     emptyOutDir: true,
   },
-  plugins: [copyRootFiles()],
+  plugins: [serveLanding(), copyRootFiles()],
   server: { port: 3000 },
 });
