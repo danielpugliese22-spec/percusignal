@@ -12,9 +12,18 @@ function serveLanding() {
           res.end();
           return;
         }
-        if (req.url === '/' || req.url === '/index.html') {
+        const staticPages = {
+          '/':             'index.html',
+          '/index.html':   'index.html',
+          '/privacidad':   'privacidad.html',
+          '/privacidad.html': 'privacidad.html',
+          '/terminos':     'terminos.html',
+          '/terminos.html': 'terminos.html',
+        };
+        const file = staticPages[req.url];
+        if (file) {
           try {
-            const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf-8');
+            const html = readFileSync(resolve(process.cwd(), file), 'utf-8');
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             res.statusCode = 200;
             res.end(html);

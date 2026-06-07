@@ -4,225 +4,163 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Términos y Condiciones — PercuSignal</title>
-<link rel="icon" type="image/png" href="/assets/favicon.png"/>
-
-<!-- Vercel Web Analytics -->
-<script>
-  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-</script>
-<script defer src="/_vercel/insights/script.js"></script>
-
-<!-- Vercel Speed Insights -->
-<script>
-  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
-</script>
-<script defer src="/_vercel/speed-insights/script.js"></script>
+<link rel="icon" type="image/svg+xml" href="/app/favicon.svg"/>
 <style>
-  :root {
-    --bg: #0a0a0f;
-    --card: #1c1c28;
-    --text: #f5f5f7;
-    --text2: rgba(255,255,255,0.65);
-    --text3: rgba(255,255,255,0.4);
-    --border: rgba(255,255,255,0.1);
-    --accent: #0a84ff;
-    --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font);
-    line-height: 1.6;
-    padding: 40px 20px;
-  }
-  .container {
-    max-width: 760px;
-    margin: 0 auto;
-  }
-  header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 40px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid var(--border);
-  }
-  header img {
-    width: 48px;
-    height: 48px;
-    border-radius: 10px;
-  }
-  header h1 {
-    font-size: 26px;
-    font-weight: 700;
-    margin: 0;
-    letter-spacing: -0.5px;
-  }
-  header .subtitle {
-    color: var(--text3);
-    font-size: 13px;
-    margin-top: 2px;
-  }
-  h2 {
-    font-size: 20px;
-    font-weight: 600;
-    margin-top: 36px;
-    margin-bottom: 12px;
-    letter-spacing: -0.3px;
-  }
-  h3 {
-    font-size: 16px;
-    font-weight: 600;
-    margin-top: 24px;
-    margin-bottom: 8px;
-    color: var(--text2);
-  }
-  p, li {
-    font-size: 15px;
-    color: var(--text2);
-  }
-  ul {
-    padding-left: 22px;
-  }
-  li {
-    margin-bottom: 6px;
-  }
-  strong {
-    color: var(--text);
-  }
-  a {
-    color: var(--accent);
-    text-decoration: none;
-  }
-  a:hover { text-decoration: underline; }
-  .meta {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px 20px;
-    margin-bottom: 32px;
-    font-size: 13px;
-    color: var(--text3);
-  }
-  .meta strong { color: var(--text2); }
-  footer {
-    margin-top: 60px;
-    padding-top: 24px;
-    border-top: 1px solid var(--border);
-    text-align: center;
-    color: var(--text3);
-    font-size: 13px;
-  }
-  footer a { margin: 0 10px; }
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0c0c;--bg2:#111111;--bg3:#161616;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.15);
+  --text:#f0ede8;--muted:#7a7671;
+  --gold:#e8d5a3;--gold2:#c4a96a;
+  --font:'Space Grotesk',sans-serif;--mono:'Space Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);background:rgba(12,12,12,0.94);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100;}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none;}
+.mark{width:34px;height:34px;border:1.5px solid var(--gold);border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mark-bars{display:flex;align-items:flex-end;gap:2.5px;height:16px;}
+.bar{background:var(--gold);border-radius:1px;width:3.5px;}
+.b1{height:7px}.b2{height:12px}.b3{height:9px}.b4{height:16px}.b5{height:11px}
+.logo-name{font-family:var(--font);font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.03em;line-height:1;}
+.logo-sub{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;}
+.back{font-family:var(--mono);font-size:12px;color:var(--muted);text-decoration:none;letter-spacing:.04em;text-transform:uppercase;transition:color .15s;}
+.back:hover{color:var(--text);}
+main{max-width:720px;margin:0 auto;padding:64px 48px 100px;}
+.page-label{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:16px;}
+h1{font-size:36px;font-weight:700;letter-spacing:-.03em;margin-bottom:8px;}
+.updated{font-family:var(--mono);font-size:12px;color:var(--muted);border:1px solid var(--border);display:inline-block;padding:8px 16px;border-radius:3px;margin-bottom:48px;line-height:1.8;}
+h2{font-size:18px;font-weight:700;color:var(--text);margin:40px 0 12px;letter-spacing:-.02em;}
+h3{font-size:14px;font-weight:600;color:rgba(240,237,232,0.7);margin:24px 0 8px;font-family:var(--mono);letter-spacing:.04em;text-transform:uppercase;}
+p{color:rgba(240,237,232,0.7);margin-bottom:14px;}
+ul{color:rgba(240,237,232,0.7);padding-left:20px;margin-bottom:14px;}
+ul li{margin-bottom:6px;}
+strong{color:var(--text);}
+a{color:var(--gold);text-decoration:none;}
+a:hover{text-decoration:underline;}
+hr{border:none;border-top:1px solid var(--border);margin:48px 0;}
+footer{border-top:1px solid var(--border);padding:24px 48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+.foot-copy{font-family:var(--mono);font-size:11px;color:var(--muted);}
+.foot-links{display:flex;gap:24px;list-style:none;}
+.foot-links a{font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;transition:color .15s;}
+.foot-links a:hover{color:var(--text);}
+@media(max-width:640px){
+  nav{padding:14px 20px;}
+  main{padding:40px 20px 80px;}
+  footer{padding:24px 20px;}
+}
 </style>
 </head>
 <body>
-<div class="container">
 
-<header>
-  <img src="/assets/logo.png" alt="PercuSignal"/>
-  <div>
-    <h1>Términos y Condiciones</h1>
-    <div class="subtitle">PercuSignal — Lectura de Dedos</div>
+<nav>
+  <a class="logo" href="/">
+    <div class="mark">
+      <div class="mark-bars">
+        <div class="bar b1"></div><div class="bar b2"></div><div class="bar b3"></div>
+        <div class="bar b4"></div><div class="bar b5"></div>
+      </div>
+    </div>
+    <div>
+      <div class="logo-name">PercuSignal</div>
+      <div class="logo-sub">Rhythm Tools</div>
+    </div>
+  </a>
+  <a class="back" href="/">← Volver</a>
+</nav>
+
+<main>
+  <div class="page-label">Legal</div>
+  <h1>Términos y Condiciones</h1>
+  <div class="updated">
+    <strong>Última actualización:</strong> 26 de mayo de 2026<br/>
+    <strong>Responsable:</strong> Daniel Pugliese — Buenos Aires, Argentina<br/>
+    <strong>Contacto:</strong> <a href="mailto:hola@percusignal.com.ar">hola@percusignal.com.ar</a>
   </div>
-</header>
 
-<div class="meta">
-  <strong>Última actualización:</strong> 26 de mayo de 2026<br/>
-  <strong>Responsable:</strong> Daniel Pugliese — Buenos Aires, Argentina<br/>
-  <strong>Contacto:</strong> <a href="mailto:hola@percusignal.com.ar">hola@percusignal.com.ar</a>
-</div>
+  <h2>1. Aceptación</h2>
+  <p>Al usar PercuSignal (en adelante, "la Aplicación") aceptás estos Términos. Si no estás de acuerdo, no uses la Aplicación.</p>
 
-<h2>1. Aceptación</h2>
-<p>Al usar PercuSignal (en adelante, "la Aplicación") aceptás estos Términos. Si no estás de acuerdo, no uses la Aplicación.</p>
+  <h2>2. Descripción del servicio</h2>
+  <p>PercuSignal es una aplicación web que utiliza la cámara del dispositivo para detectar dedos de la mano mediante visión por computadora, y los traduce en patrones rítmicos de percusión. El servicio se ofrece en modalidad freemium con dos planes: <strong>Free</strong> y <strong>Premium</strong>.</p>
 
-<h2>2. Descripción del servicio</h2>
-<p>PercuSignal es una aplicación web que utiliza la cámara del dispositivo del usuario para detectar los dedos de la mano mediante visión por computadora, y los traduce en patrones rítmicos de percusión. El servicio se ofrece en modalidad freemium con tres planes: Free, Premium y Pro Escuelas.</p>
+  <h2>3. Cuenta de usuario</h2>
+  <p>Para acceder a funcionalidades pagas, el usuario debe registrar un correo electrónico válido. El usuario es el único responsable de la veracidad de los datos proporcionados.</p>
 
-<h2>3. Cuenta de usuario</h2>
-<p>Para acceder a funcionalidades pagas, el usuario debe registrar un correo electrónico válido. El usuario es el único responsable de la veracidad de los datos proporcionados.</p>
+  <h2>4. Pagos y suscripciones</h2>
 
-<h2>4. Pagos y suscripciones</h2>
+  <h3>4.1 Precios</h3>
+  <ul>
+    <li><strong>Free:</strong> sin costo, con funcionalidades limitadas (2 instrumentos, 4 compases máximo)</li>
+    <li><strong>Premium:</strong> $8.900 ARS por mes</li>
+  </ul>
+  <p>Los precios pueden actualizarse. Las actualizaciones se notificarán por email con al menos 30 días de anticipación.</p>
 
-<h3>4.1 Precios</h3>
-<ul>
-  <li><strong>Free:</strong> sin costo, con funcionalidades limitadas (2 instrumentos, 4 compases máximo)</li>
-  <li><strong>Premium:</strong> $8.900 ARS por mes o $79.000 ARS por año</li>
-  <li><strong>Pro Escuelas:</strong> $29.000 ARS por mes</li>
-</ul>
-<p>Los precios pueden actualizarse según la inflación o cambios en costos operativos. Las actualizaciones se notificarán por email con al menos 30 días de anticipación.</p>
+  <h3>4.2 Procesamiento</h3>
+  <p>Los pagos son procesados por <strong>MercadoPago Argentina</strong>. PercuSignal no almacena datos de tarjetas de crédito. Toda la información financiera es manejada por MercadoPago bajo sus propios términos.</p>
 
-<h3>4.2 Procesamiento</h3>
-<p>Los pagos son procesados por <strong>MercadoPago Argentina</strong>. PercuSignal no almacena datos de tarjetas de crédito. Toda la información financiera es manejada por MercadoPago bajo sus propios Términos y Política de Privacidad.</p>
+  <h3>4.3 Vigencia y renovación</h3>
+  <p>La suscripción es por pago único del período contratado (mensual). <strong>No hay renovación automática.</strong> Una vez vencido el período, la cuenta vuelve al plan Free salvo que el usuario abone una nueva suscripción.</p>
 
-<h3>4.3 Vigencia y renovación</h3>
-<p>La suscripción es por pago único del período contratado (mensual o anual). <strong>No hay renovación automática.</strong> Una vez vencido el período, la cuenta vuelve al plan Free salvo que el usuario abone una nueva suscripción manualmente.</p>
+  <h3>4.4 Reembolsos</h3>
+  <p>El usuario tiene derecho a solicitar el reembolso dentro de los <strong>10 días corridos</strong> desde la fecha de pago, conforme al artículo 1110 del Código Civil y Comercial de la Nación (ley de defensa del consumidor para contratación a distancia).</p>
+  <p>Para solicitar un reembolso, escribir a <a href="mailto:hola@percusignal.com.ar">hola@percusignal.com.ar</a> dentro de ese plazo. El reembolso se procesa vía MercadoPago en un máximo de 7 días hábiles.</p>
+  <p>Pasados los 10 días, no se procesan reembolsos salvo causas justificadas imputables al proveedor.</p>
 
-<h3>4.4 Reembolsos</h3>
-<p>El usuario tiene derecho a solicitar el reembolso del pago dentro de los <strong>10 días corridos</strong> desde la fecha de pago, conforme al artículo 1110 del Código Civil y Comercial de la Nación (ley argentina de defensa del consumidor para contratación a distancia).</p>
-<p>Para solicitar un reembolso, escribir a <a href="mailto:hola@percusignal.com.ar">hola@percusignal.com.ar</a> dentro de ese plazo. El reembolso se procesará vía MercadoPago en un plazo máximo de 7 días hábiles.</p>
-<p>Pasados los 10 días corridos, no se procesan reembolsos salvo causas justificadas (por ejemplo: la Aplicación deja de funcionar por motivos imputables al proveedor).</p>
+  <h2>5. Cancelación</h2>
+  <p>Podés cancelar tu suscripción en cualquier momento. La cancelación se hace efectiva al vencimiento del período ya pago, sin penalidades. Seguís teniendo acceso Premium hasta el fin del período abonado.</p>
+  <p>Para eliminar tu cuenta completamente, escribinos a <a href="mailto:hola@percusignal.com.ar">hola@percusignal.com.ar</a>. La eliminación se procesa dentro de los 7 días hábiles.</p>
 
-<h2>5. Uso permitido</h2>
-<p>El usuario se compromete a:</p>
-<ul>
-  <li>Usar PercuSignal solo para fines lícitos</li>
-  <li>No intentar acceder a la Aplicación mediante ingeniería inversa o explotación de vulnerabilidades</li>
-  <li>No compartir credenciales de acceso de planes pagos con terceros</li>
-  <li>No usar la Aplicación para acosar, amenazar o dañar a otros</li>
-</ul>
-<p>El incumplimiento puede resultar en suspensión o cancelación de la cuenta sin reembolso.</p>
+  <h2>6. Uso aceptable</h2>
+  <p>El usuario se compromete a:</p>
+  <ul>
+    <li>Usar PercuSignal solo para fines lícitos y personales</li>
+    <li>No intentar acceder a la Aplicación mediante ingeniería inversa o explotación de vulnerabilidades</li>
+    <li>No compartir credenciales de planes pagos con terceros</li>
+    <li>No usar la Aplicación con fines comerciales sin autorización escrita</li>
+  </ul>
+  <p>El incumplimiento puede resultar en suspensión de la cuenta sin reembolso.</p>
 
-<h2>6. Propiedad intelectual</h2>
-<p>El código fuente, diseño, iconos, ilustraciones y demás contenidos de PercuSignal son propiedad de Daniel Pugliese. Está prohibida su reproducción total o parcial sin autorización escrita.</p>
-<p>El usuario conserva la propiedad de las composiciones rítmicas que genere en la Aplicación. PercuSignal no reclama derechos sobre el contenido creado por el usuario.</p>
+  <h2>7. Propiedad intelectual</h2>
+  <p>El código fuente, diseño, iconos e ilustraciones de PercuSignal son propiedad de Daniel Pugliese. Está prohibida su reproducción sin autorización escrita.</p>
+  <p>El usuario conserva la propiedad de las composiciones rítmicas que genere. PercuSignal no reclama derechos sobre el contenido creado por el usuario.</p>
 
-<h2>7. Privacidad y datos personales</h2>
-<p>El tratamiento de datos personales se rige por nuestra <a href="/privacidad">Política de Privacidad</a>, que forma parte integral de estos Términos.</p>
-<p>Cumplimos con la Ley Nacional 25.326 de Protección de Datos Personales de Argentina.</p>
+  <h2>8. Privacidad</h2>
+  <p>El tratamiento de datos personales se rige por nuestra <a href="/privacidad">Política de Privacidad</a>, que forma parte integral de estos Términos. Cumplimos con la Ley 25.326 de Protección de Datos Personales de Argentina.</p>
 
-<h2>8. Cámara y privacidad</h2>
-<p>PercuSignal procesa la imagen de tu cámara <strong>localmente en tu navegador</strong>. Las imágenes no se suben a ningún servidor, no se almacenan, y no se comparten con terceros. El reconocimiento de manos se realiza usando MediaPipe (librería de Google) en el dispositivo del usuario.</p>
+  <h2>9. Cámara</h2>
+  <p>PercuSignal procesa la imagen de tu cámara <strong>localmente en tu navegador</strong> usando MediaPipe. Las imágenes no se suben a ningún servidor, no se almacenan y no se comparten con terceros.</p>
 
-<h2>9. Disponibilidad del servicio</h2>
-<p>Aunque hacemos esfuerzos razonables para mantener PercuSignal funcionando 24/7, no garantizamos disponibilidad ininterrumpida. La Aplicación puede sufrir interrupciones por mantenimiento, fallas técnicas o causas de fuerza mayor.</p>
-<p>En caso de interrupción mayor a 7 días corridos durante una suscripción activa, el usuario puede solicitar prorroga del período de suscripción.</p>
+  <h2>10. Disponibilidad</h2>
+  <p>Hacemos esfuerzos razonables para mantener PercuSignal funcionando, pero no garantizamos disponibilidad ininterrumpida. En caso de interrupción mayor a 7 días corridos durante una suscripción activa, el usuario puede solicitar prórroga del período.</p>
 
-<h2>10. Limitación de responsabilidad</h2>
-<p>PercuSignal se ofrece "como está". No nos hacemos responsables por:</p>
-<ul>
-  <li>Daños indirectos derivados del uso de la Aplicación</li>
-  <li>Pérdida de composiciones por fallas técnicas (recomendamos exportar regularmente)</li>
-  <li>Incompatibilidad con navegadores antiguos o dispositivos sin cámara</li>
-  <li>Funcionamiento defectuoso por mal estado de la conexión de internet del usuario</li>
-</ul>
+  <h2>11. Limitación de responsabilidad</h2>
+  <p>PercuSignal se ofrece "como está". No nos hacemos responsables por pérdida de composiciones por fallas técnicas (recomendamos exportar regularmente), ni por incompatibilidad con navegadores o dispositivos.</p>
 
-<h2>11. Modificaciones a estos Términos</h2>
-<p>Nos reservamos el derecho de modificar estos Términos. Los cambios sustanciales se notificarán por email con 30 días de anticipación. El uso continuado de la Aplicación después de la notificación implica aceptación de los nuevos Términos.</p>
+  <h2>12. Modificaciones</h2>
+  <p>Nos reservamos el derecho de modificar estos Términos. Los cambios sustanciales se notificarán por email con 30 días de anticipación. El uso continuado implica aceptación de los nuevos Términos.</p>
 
-<h2>12. Cancelación de cuenta</h2>
-<p>El usuario puede solicitar la eliminación de su cuenta y datos personales en cualquier momento escribiendo a <a href="mailto:hola@percusignal.com.ar">hola@percusignal.com.ar</a>. La eliminación se procesa dentro de los 7 días hábiles.</p>
-<p>La cancelación de una suscripción activa no genera reembolso fuera del plazo de 10 días establecido en el punto 4.4.</p>
+  <h2>13. Jurisdicción</h2>
+  <p>Estos Términos se rigen por las leyes de la República Argentina. Para cualquier controversia, las partes se someten a los tribunales ordinarios de la Ciudad Autónoma de Buenos Aires.</p>
 
-<h2>13. Jurisdicción</h2>
-<p>Estos Términos se rigen por las leyes de la República Argentina. Para cualquier controversia, las partes se someten a los tribunales ordinarios de la Ciudad Autónoma de Buenos Aires, renunciando a cualquier otro fuero o jurisdicción que pudiera corresponderles.</p>
+  <hr/>
 
-<h2>14. Contacto</h2>
-<p>Para cualquier consulta sobre estos Términos:</p>
-<ul>
-  <li>Email: <a href="mailto:hola@percusignal.com.ar">hola@percusignal.com.ar</a></li>
-  <li>Web: <a href="https://percusignal.com.ar">percusignal.com.ar</a></li>
-</ul>
+  <h2>Contacto</h2>
+  <p>Email: <a href="mailto:hola@percusignal.com.ar">hola@percusignal.com.ar</a><br/>
+  Web: <a href="https://percusignal.com.ar">percusignal.com.ar</a></p>
+</main>
 
 <footer>
-  <a href="/">Inicio</a> · 
-  <a href="/terminos">Términos</a> · 
-  <a href="/privacidad">Privacidad</a> · 
-  <a href="mailto:hola@percusignal.com.ar">Contacto</a>
+  <span class="foot-copy">© 2026 PercuSignal · Buenos Aires 🇦🇷</span>
+  <ul class="foot-links">
+    <li><a href="/">Inicio</a></li>
+    <li><a href="/privacidad">Privacidad</a></li>
+    <li><a href="/terminos">Términos</a></li>
+    <li><a href="mailto:hola@percusignal.com.ar">Contacto</a></li>
+  </ul>
 </footer>
 
-</div>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
+<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>

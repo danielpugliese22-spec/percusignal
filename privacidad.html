@@ -4,190 +4,177 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Política de Privacidad — PercuSignal</title>
-<link rel="icon" type="image/png" href="/assets/favicon.png"/>
-
-<!-- Vercel Web Analytics -->
-<script>
-  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-</script>
-<script defer src="/_vercel/insights/script.js"></script>
-
-<!-- Vercel Speed Insights -->
-<script>
-  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
-</script>
-<script defer src="/_vercel/speed-insights/script.js"></script>
+<link rel="icon" type="image/svg+xml" href="/app/favicon.svg"/>
 <style>
-  :root {
-    --bg: #0a0a0f;
-    --card: #1c1c28;
-    --text: #f5f5f7;
-    --text2: rgba(255,255,255,0.65);
-    --text3: rgba(255,255,255,0.4);
-    --border: rgba(255,255,255,0.1);
-    --accent: #0a84ff;
-    --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font);
-    line-height: 1.6;
-    padding: 40px 20px;
-  }
-  .container { max-width: 760px; margin: 0 auto; }
-  header { display: flex; align-items: center; gap: 14px; margin-bottom: 40px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
-  header img { width: 48px; height: 48px; border-radius: 10px; }
-  header h1 { font-size: 26px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
-  header .subtitle { color: var(--text3); font-size: 13px; margin-top: 2px; }
-  h2 { font-size: 20px; font-weight: 600; margin-top: 36px; margin-bottom: 12px; letter-spacing: -0.3px; }
-  h3 { font-size: 16px; font-weight: 600; margin-top: 24px; margin-bottom: 8px; color: var(--text2); }
-  p, li { font-size: 15px; color: var(--text2); }
-  ul { padding-left: 22px; }
-  li { margin-bottom: 6px; }
-  strong { color: var(--text); }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  .meta { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; margin-bottom: 32px; font-size: 13px; color: var(--text3); }
-  .meta strong { color: var(--text2); }
-  .highlight { background: rgba(48,209,88,0.08); border: 1px solid rgba(48,209,88,0.25); border-radius: 12px; padding: 16px 20px; margin: 20px 0; }
-  .highlight p { margin: 0; color: rgba(255,255,255,0.85); }
-  footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border); text-align: center; color: var(--text3); font-size: 13px; }
-  footer a { margin: 0 10px; }
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0c0c;--bg2:#111111;--bg3:#161616;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.15);
+  --text:#f0ede8;--muted:#7a7671;
+  --gold:#e8d5a3;--gold2:#c4a96a;
+  --font:'Space Grotesk',sans-serif;--mono:'Space Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);background:rgba(12,12,12,0.94);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100;}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none;}
+.mark{width:34px;height:34px;border:1.5px solid var(--gold);border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mark-bars{display:flex;align-items:flex-end;gap:2.5px;height:16px;}
+.bar{background:var(--gold);border-radius:1px;width:3.5px;}
+.b1{height:7px}.b2{height:12px}.b3{height:9px}.b4{height:16px}.b5{height:11px}
+.logo-name{font-family:var(--font);font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.03em;line-height:1;}
+.logo-sub{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;}
+.back{font-family:var(--mono);font-size:12px;color:var(--muted);text-decoration:none;letter-spacing:.04em;text-transform:uppercase;transition:color .15s;}
+.back:hover{color:var(--text);}
+main{max-width:720px;margin:0 auto;padding:64px 48px 100px;}
+.page-label{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:16px;}
+h1{font-size:36px;font-weight:700;letter-spacing:-.03em;margin-bottom:8px;}
+.updated{font-family:var(--mono);font-size:12px;color:var(--muted);border:1px solid var(--border);display:inline-block;padding:8px 16px;border-radius:3px;margin-bottom:48px;line-height:1.8;}
+h2{font-size:18px;font-weight:700;color:var(--text);margin:40px 0 12px;letter-spacing:-.02em;}
+h3{font-size:14px;font-weight:600;color:rgba(240,237,232,0.7);margin:24px 0 8px;font-family:var(--mono);letter-spacing:.04em;text-transform:uppercase;}
+p{color:rgba(240,237,232,0.7);margin-bottom:14px;}
+ul{color:rgba(240,237,232,0.7);padding-left:20px;margin-bottom:14px;}
+ul li{margin-bottom:6px;}
+strong{color:var(--text);}
+a{color:var(--gold);text-decoration:none;}
+a:hover{text-decoration:underline;}
+.callout{background:rgba(232,213,163,0.06);border:1px solid rgba(232,213,163,0.2);border-radius:4px;padding:16px 20px;margin:0 0 32px;}
+.callout p{margin:0;color:rgba(240,237,232,0.85);}
+hr{border:none;border-top:1px solid var(--border);margin:48px 0;}
+footer{border-top:1px solid var(--border);padding:24px 48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+.foot-copy{font-family:var(--mono);font-size:11px;color:var(--muted);}
+.foot-links{display:flex;gap:24px;list-style:none;}
+.foot-links a{font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;transition:color .15s;}
+.foot-links a:hover{color:var(--text);}
+@media(max-width:640px){
+  nav{padding:14px 20px;}
+  main{padding:40px 20px 80px;}
+  footer{padding:24px 20px;}
+}
 </style>
 </head>
 <body>
-<div class="container">
 
-<header>
-  <img src="/assets/logo.png" alt="PercuSignal"/>
-  <div>
-    <h1>Política de Privacidad</h1>
-    <div class="subtitle">PercuSignal — Lectura de Dedos</div>
+<nav>
+  <a class="logo" href="/">
+    <div class="mark">
+      <div class="mark-bars">
+        <div class="bar b1"></div><div class="bar b2"></div><div class="bar b3"></div>
+        <div class="bar b4"></div><div class="bar b5"></div>
+      </div>
+    </div>
+    <div>
+      <div class="logo-name">PercuSignal</div>
+      <div class="logo-sub">Rhythm Tools</div>
+    </div>
+  </a>
+  <a class="back" href="/">← Volver</a>
+</nav>
+
+<main>
+  <div class="page-label">Legal</div>
+  <h1>Política de Privacidad</h1>
+  <div class="updated">
+    <strong>Última actualización:</strong> 26 de mayo de 2026<br/>
+    <strong>Responsable:</strong> Daniel Pugliese — Buenos Aires, Argentina<br/>
+    <strong>Contacto:</strong> <a href="mailto:hola@percusignal.com.ar">hola@percusignal.com.ar</a><br/>
+    <strong>Marco legal:</strong> Ley 25.326 de Protección de Datos Personales (Argentina)
   </div>
-</header>
 
-<div class="meta">
-  <strong>Última actualización:</strong> 26 de mayo de 2026<br/>
-  <strong>Responsable del tratamiento:</strong> Daniel Pugliese — Buenos Aires, Argentina<br/>
-  <strong>Contacto:</strong> <a href="mailto:hola@percusignal.com.ar">hola@percusignal.com.ar</a><br/>
-  <strong>Marco legal:</strong> Ley Nacional 25.326 de Protección de Datos Personales (Argentina)
-</div>
+  <div class="callout">
+    <p><strong>Resumen:</strong> No vendemos tus datos. No almacenamos imágenes de tu cámara. Solo guardamos tu email para gestionar tu suscripción. Podés pedir que borremos todo en cualquier momento.</p>
+  </div>
 
-<div class="highlight">
-  <p><strong>Resumen rápido:</strong> No vendemos tus datos. No almacenamos imágenes de tu cámara. Solo guardamos tu email para gestionar tu suscripción. Podés pedir que borremos todo en cualquier momento.</p>
-</div>
+  <h2>1. Qué datos recolectamos</h2>
 
-<h2>1. Qué datos recolectamos</h2>
+  <h3>1.1 Datos que vos nos proporcionás</h3>
+  <ul>
+    <li><strong>Email</strong> — para crear tu cuenta y enviarte notificaciones sobre tu suscripción</li>
+  </ul>
 
-<h3>1.1 Datos que vos nos proporcionás</h3>
-<ul>
-  <li><strong>Email</strong> — para crear tu cuenta y enviarte notificaciones sobre tu suscripción</li>
-</ul>
+  <h3>1.2 Datos generados al usar la aplicación</h3>
+  <ul>
+    <li><strong>Plan contratado</strong> (Free o Premium)</li>
+    <li><strong>Fecha de vencimiento</strong> de la suscripción activa</li>
+    <li><strong>ID de transacción de MercadoPago</strong> (para reconciliación de pagos)</li>
+  </ul>
 
-<h3>1.2 Datos generados al usar la Aplicación</h3>
-<ul>
-  <li><strong>Plan contratado</strong> (Free, Premium, Pro Escuelas)</li>
-  <li><strong>Fecha de vencimiento</strong> de la suscripción activa</li>
-  <li><strong>ID de transacción de MercadoPago</strong> (para reconciliación de pagos)</li>
-</ul>
+  <h3>1.3 Datos que NO recolectamos</h3>
+  <ul>
+    <li><strong>Imágenes de tu cámara</strong> — el procesamiento de video es 100% local en tu navegador</li>
+    <li><strong>Tus composiciones rítmicas</strong> — se guardan solo en tu dispositivo (localStorage)</li>
+    <li><strong>Tu voz</strong> — el reconocimiento de voz también es local</li>
+    <li><strong>Datos de tarjeta</strong> — son manejados exclusivamente por MercadoPago</li>
+    <li><strong>Ubicación geográfica, contactos ni fotos del dispositivo</strong></li>
+  </ul>
 
-<h3>1.3 Datos que NO recolectamos</h3>
-<ul>
-  <li><strong>Imágenes de tu cámara</strong> — el procesamiento de video es 100% local en tu navegador</li>
-  <li><strong>Tus composiciones rítmicas</strong> — se guardan solo en tu dispositivo (localStorage del navegador)</li>
-  <li><strong>Tu voz</strong> — el reconocimiento de voz también es local</li>
-  <li><strong>Datos de tarjeta</strong> — son manejados exclusivamente por MercadoPago</li>
-  <li><strong>Ubicación geográfica precisa</strong></li>
-  <li><strong>Contactos, fotos u otros datos del dispositivo</strong></li>
-</ul>
+  <h2>2. Cómo usamos tus datos</h2>
+  <p>Los datos recolectados se usan exclusivamente para:</p>
+  <ul>
+    <li>Habilitar el acceso a las funcionalidades según el plan contratado</li>
+    <li>Procesar pagos vía MercadoPago</li>
+    <li>Enviarte notificaciones operativas (vencimiento de suscripción, cambios en el servicio)</li>
+    <li>Responder consultas que nos envíes por email</li>
+  </ul>
+  <p><strong>No usamos tus datos para:</strong> publicidad, perfilamiento ni venta a terceros.</p>
 
-<h2>2. Cómo usamos tus datos</h2>
-<p>Los datos recolectados se usan exclusivamente para:</p>
-<ul>
-  <li>Habilitar el acceso a las funcionalidades pagas según el plan contratado</li>
-  <li>Procesar pagos vía MercadoPago</li>
-  <li>Enviarte notificaciones operativas (vencimiento de suscripción, cambios en el servicio)</li>
-  <li>Responder consultas que nos envíes por email</li>
-</ul>
-<p><strong>NO usamos tus datos para:</strong> publicidad, perfilamiento, venta a terceros, ni ningún propósito comercial ajeno al funcionamiento del servicio.</p>
+  <h2>3. Quién tiene acceso a tus datos</h2>
 
-<h2>3. Quién tiene acceso a tus datos</h2>
+  <h3>Proveedores que usamos</h3>
+  <ul>
+    <li><strong>MercadoPago</strong> — procesamiento de pagos. Recibe tu email y monto.</li>
+    <li><strong>Supabase</strong> — base de datos (servidores en Brasil). Almacena email, plan y fecha de vencimiento.</li>
+    <li><strong>Vercel</strong> — hosting y analytics anónimos (servidores en EEUU).</li>
+    <li><strong>Google Fonts</strong> — tipografías (puede registrar tu IP al cargarlas).</li>
+  </ul>
+  <p>Estos proveedores cumplen con estándares internacionales (GDPR, SOC2). <strong>No vendemos ni compartimos tus datos</strong> con terceros con fines comerciales.</p>
 
-<h3>3.1 Proveedores que usamos</h3>
-<p>Para hacer funcionar PercuSignal, compartimos datos mínimos con los siguientes servicios:</p>
-<ul>
-  <li><strong>MercadoPago</strong> (procesamiento de pagos) — recibe tu email y monto de la transacción</li>
-  <li><strong>Supabase</strong> (base de datos, alojada en Brasil-São Paulo) — almacena tu email, plan y fecha de vencimiento</li>
-  <li><strong>Vercel</strong> (hosting del sitio, servidores en EEUU) — procesa requests HTTP pero no almacena datos personales</li>
-</ul>
-<p>Estos proveedores cumplen con estándares internacionales de protección de datos (GDPR, SOC2).</p>
+  <h2>4. Tus derechos</h2>
+  <p>Conforme a la Ley 25.326, tenés derecho a acceder, rectificar, suprimir u oponerte al tratamiento de tus datos personales. Escribinos a <a href="mailto:hola@percusignal.com.ar">hola@percusignal.com.ar</a> y respondemos dentro de los 10 días hábiles.</p>
+  <p>También podés realizar denuncias ante la <a href="https://www.argentina.gob.ar/aaip" target="_blank">Agencia de Acceso a la Información Pública</a>.</p>
 
-<h3>3.2 No compartimos con terceros</h3>
-<p>No vendemos, alquilamos ni intercambiamos tus datos con terceros con fines comerciales. Solo los proveedores mencionados arriba reciben los mínimos datos necesarios para operar.</p>
+  <h2>5. Cookies y almacenamiento local</h2>
+  <p>Usamos <strong>localStorage</strong> del navegador para guardar tu sesión, composiciones y preferencias. Estos datos quedan en tu dispositivo. <strong>No usamos cookies de tracking ni publicidad.</strong></p>
 
-<h2>4. Tus derechos</h2>
-<p>Conforme a la Ley 25.326, tenés derecho a:</p>
-<ul>
-  <li><strong>Acceso:</strong> saber qué datos tuyos guardamos</li>
-  <li><strong>Rectificación:</strong> corregir datos incorrectos</li>
-  <li><strong>Supresión:</strong> que borremos tus datos</li>
-  <li><strong>Oposición:</strong> oponerte al tratamiento de tus datos</li>
-</ul>
-<p>Para ejercer cualquiera de estos derechos, escribinos a <a href="mailto:hola@percusignal.com.ar">hola@percusignal.com.ar</a>. Respondemos dentro de los 10 días hábiles.</p>
+  <h2>6. Seguridad</h2>
+  <ul>
+    <li>Conexión HTTPS en todo el sitio</li>
+    <li>Tokens almacenados de forma encriptada</li>
+    <li>Acceso restringido a la base de datos</li>
+    <li>Backups automáticos diarios</li>
+  </ul>
+  <p>Si detectás una vulnerabilidad, reportala a <a href="mailto:hola@percusignal.com.ar">hola@percusignal.com.ar</a>.</p>
 
-<p>Asimismo, podés realizar denuncias ante la Agencia de Acceso a la Información Pública (Organismo de Control de la Ley 25.326): <a href="https://www.argentina.gob.ar/aaip" target="_blank">argentina.gob.ar/aaip</a></p>
+  <h2>7. Retención de datos</h2>
+  <p>Conservamos tus datos mientras tu cuenta esté activa. Si solicitás eliminar tu cuenta, borramos tus datos personales dentro de los 7 días hábiles, salvo registros contables obligatorios por ley.</p>
 
-<h2>5. Cookies y almacenamiento local</h2>
-<p>PercuSignal usa <strong>localStorage</strong> del navegador para guardar:</p>
-<ul>
-  <li>Tu sesión iniciada (email)</li>
-  <li>Tus composiciones rítmicas</li>
-  <li>Tus preferencias (instrumento activo, BPM, etc.)</li>
-</ul>
-<p>Estos datos quedan en tu dispositivo y no se transmiten a nuestros servidores salvo para verificar tu plan. Podés borrarlos limpiando los datos del sitio en la configuración de tu navegador.</p>
+  <h2>8. Menores de edad</h2>
+  <p>PercuSignal no está dirigido a menores de 13 años. Si sos padre/tutor y creés que tu hijo nos brindó datos, escribinos para eliminarlos.</p>
 
-<p><strong>No usamos cookies de tracking ni de publicidad.</strong></p>
+  <h2>9. Transferencia internacional</h2>
+  <p>Tus datos se almacenan en servidores fuera de Argentina (Supabase en Brasil, Vercel en EEUU), países con leyes de protección de datos compatibles con la legislación argentina.</p>
 
-<h2>6. Seguridad</h2>
-<p>Aplicamos medidas razonables para proteger tus datos:</p>
-<ul>
-  <li>Conexión HTTPS en todo el sitio</li>
-  <li>Contraseñas y tokens almacenados de forma encriptada</li>
-  <li>Acceso restringido a la base de datos solo para el personal técnico esencial</li>
-  <li>Backups automáticos diarios</li>
-</ul>
-<p>Sin embargo, ningún sistema es 100% seguro. Si detectás una vulnerabilidad o uso indebido, por favor reportalo a <a href="mailto:hola@percusignal.com.ar">hola@percusignal.com.ar</a>.</p>
+  <h2>10. Cambios en esta política</h2>
+  <p>Los cambios sustanciales se notificarán por email con 30 días de anticipación. La versión vigente siempre estará disponible en esta página.</p>
 
-<h2>7. Retención de datos</h2>
-<p>Conservamos tus datos mientras tu cuenta esté activa o sea necesario para cumplir con obligaciones legales (por ejemplo: registros contables por 10 años según la ley argentina).</p>
-<p>Si solicitás eliminar tu cuenta, borramos todos tus datos personales dentro de los 7 días hábiles, salvo los registros contables que estamos obligados a conservar por ley.</p>
+  <hr/>
 
-<h2>8. Menores de edad</h2>
-<p>PercuSignal no está dirigido a menores de 13 años. No recolectamos conscientemente datos de menores. Si sos padre/madre/tutor y creés que tu hijo nos brindó datos, escribinos para eliminarlos.</p>
-
-<h2>9. Transferencia internacional de datos</h2>
-<p>Tus datos se almacenan en servidores fuera de Argentina (Supabase en Brasil, Vercel en EEUU). Estos países cuentan con leyes de protección de datos compatibles con la legislación argentina, según resoluciones de la Agencia de Acceso a la Información Pública.</p>
-
-<h2>10. Cambios en esta Política</h2>
-<p>Podemos actualizar esta Política periódicamente. Los cambios sustanciales se notificarán por email con 30 días de anticipación. La fecha de última actualización siempre aparece al inicio de este documento.</p>
-
-<h2>11. Contacto</h2>
-<p>Para cualquier consulta sobre tu privacidad o datos personales:</p>
-<ul>
-  <li>Email: <a href="mailto:hola@percusignal.com.ar">hola@percusignal.com.ar</a></li>
-  <li>Responsable: Daniel Pugliese, Buenos Aires, Argentina</li>
-</ul>
+  <h2>Contacto</h2>
+  <p>Email: <a href="mailto:hola@percusignal.com.ar">hola@percusignal.com.ar</a><br/>
+  Responsable: Daniel Pugliese, Buenos Aires, Argentina</p>
+</main>
 
 <footer>
-  <a href="/">Inicio</a> · 
-  <a href="/terminos">Términos</a> · 
-  <a href="/privacidad">Privacidad</a> · 
-  <a href="mailto:hola@percusignal.com.ar">Contacto</a>
+  <span class="foot-copy">© 2026 PercuSignal · Buenos Aires 🇦🇷</span>
+  <ul class="foot-links">
+    <li><a href="/">Inicio</a></li>
+    <li><a href="/privacidad">Privacidad</a></li>
+    <li><a href="/terminos">Términos</a></li>
+    <li><a href="mailto:hola@percusignal.com.ar">Contacto</a></li>
+  </ul>
 </footer>
 
-</div>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
+<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
