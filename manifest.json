@@ -6,11 +6,17 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "theme_color": "#0a0a0f",
-  "background_color": "#0a0a0f",
+  "theme_color": "#e8d5a3",
+  "background_color": "#0c0c0c",
   "lang": "es-AR",
   "categories": ["music", "education", "entertainment"],
   "icons": [
+    {
+      "src": "/app/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
     {
       "src": "/app/icon-192.png",
       "sizes": "192x192",
@@ -28,7 +34,7 @@
     {
       "name": "Abrir app",
       "url": "/app/",
-      "icons": [{ "src": "/app/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/app/icon.svg", "sizes": "any" }]
     }
   ]
 }
