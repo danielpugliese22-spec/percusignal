@@ -62,8 +62,8 @@ tr:hover td{background:var(--bg2);}
 .auth-sub{font-size:13px;color:var(--muted);margin-bottom:28px;}
 .form-group{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
 label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;}
-input[type="password"]{background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:15px;padding:12px 16px;outline:none;width:100%;transition:border-color .15s;}
-input[type="password"]:focus{border-color:rgba(232,213,163,0.4);}
+input[type="text"]{background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:15px;padding:12px 16px;outline:none;width:100%;transition:border-color .15s;}
+input[type="text"]:focus{border-color:rgba(232,213,163,0.4);}
 .btn-primary{background:var(--gold2);color:#0c0c0c;width:100%;justify-content:center;padding:13px;}
 .btn-primary:hover{opacity:.85;}
 .error-msg{font-family:var(--mono);font-size:12px;color:var(--red);margin-top:8px;display:none;}
@@ -105,10 +105,10 @@ footer{border-top:1px solid var(--border);padding:24px 48px;display:flex;align-i
     <div class="auth-sub">Ingresá la clave para ver el panel del club.</div>
     <div class="form-group">
       <label for="secret-input">Clave de acceso</label>
-      <input type="password" id="secret-input" placeholder="••••••••" autocomplete="current-password"/>
+      <input type="text" id="secret-input" placeholder="Ingresá la clave" autocomplete="off"/>
     </div>
     <button class="btn btn-primary" onclick="doLogin()">Entrar</button>
-    <div class="error-msg" id="auth-error">Clave incorrecta.</div>
+    <div class="error-msg" id="auth-error">Acceso no autorizado.</div>
   </div>
 </div>
 
