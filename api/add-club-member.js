@@ -1,6 +1,8 @@
 // api/add-club-member.js
 // Vercel Serverless Function — agrega un miembro a un club
 
+import { sendEmail, tplWelcomeClubMember } from './_email.js';
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const ADMIN_SECRET = process.env.ADMIN_SECRET;
@@ -40,7 +42,28 @@ export default async function handler(req, res) {
     const data = await r.json();
     if (!r.ok) return res.status(400).json({ error: data.message || data.details || 'Error al agregar miembro' });
 
-    return res.status(201).json(Array.isArray(data) ? data[0] : data);
+    const member = Array.isArray(data) ? data[0] : data;
+
+    // Email de bienvenida (solo si RESEND_API_KEY está configurado)
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const clubRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/clubs?id=eq.${encodeURIComponent(club_id)}&select=name,id`,
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+        );
+        const clubs = await clubRes.json();
+        const clubName = clubs[0]?.name || club_id;
+        await sendEmail({
+          to: email,
+          subject: `Bienvenido a ${clubName} — PercuSignal`,
+          html: tplWelcomeClubMember({ email, displayName: display_name, clubName, clubId: club_id })
+        });
+      } catch (e) {
+        console.error('[email] Welcome club error:', e.message);
+      }
+    }
+
+    return res.status(201).json(member);
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
