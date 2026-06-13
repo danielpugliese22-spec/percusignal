@@ -33,6 +33,7 @@ function makePaymentFetch(status, externalRef) {
   };
 }
 
+// call[0] = MP payment lookup, call[1] = club_members, call[2] = users
 describe('mp-webhook — rama club:', () => {
   let fetchMock;
 
@@ -40,22 +41,53 @@ describe('mp-webhook — rama club:', () => {
   afterEach(() => { vi.restoreAllMocks(); });
 
   it('writes to club_members when external_reference has club: prefix', async () => {
-    // 1) fetch payment, 2) fetch Supabase club_members
     fetchMock
       .mockResolvedValueOnce(makePaymentFetch('approved', 'user@test.com|club:qlpm|30'))
-      .mockResolvedValueOnce({ status: 200 });
+      .mockResolvedValueOnce({ status: 200 }) // club_members
+      .mockResolvedValueOnce({ status: 200 }); // users
 
     const res = makeRes();
     await handler(makeReq({ topic: 'payment', id: 'pay_001' }), res);
 
     expect(res._body).toBe('OK - club');
-    // Verify Supabase call went to club_members
-    const sbCall = fetchMock.mock.calls[1];
-    expect(sbCall[0]).toContain('/rest/v1/club_members');
-    const sbBody = JSON.parse(sbCall[1].body);
-    expect(sbBody.club_id).toBe('qlpm');
-    expect(sbBody.email).toBe('user@test.com');
-    expect(sbBody.active_until).toBeDefined();
+    const sbClubCall = fetchMock.mock.calls[1];
+    expect(sbClubCall[0]).toContain('/rest/v1/club_members');
+    const sbClubBody = JSON.parse(sbClubCall[1].body);
+    expect(sbClubBody.club_id).toBe('qlpm');
+    expect(sbClubBody.email).toBe('user@test.com');
+    expect(sbClubBody.active_until).toBeDefined();
+  });
+
+  it('also upserts users with plan=premium when club payment is approved', async () => {
+    fetchMock
+      .mockResolvedValueOnce(makePaymentFetch('approved', 'user@test.com|club:qlpm|30'))
+      .mockResolvedValueOnce({ status: 200 }) // club_members
+      .mockResolvedValueOnce({ status: 200 }); // users
+
+    const res = makeRes();
+    await handler(makeReq({ topic: 'payment', id: 'pay_001' }), res);
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const sbUserCall = fetchMock.mock.calls[2];
+    expect(sbUserCall[0]).toContain('/rest/v1/users');
+    const sbUserBody = JSON.parse(sbUserCall[1].body);
+    expect(sbUserBody.email).toBe('user@test.com');
+    expect(sbUserBody.plan).toBe('premium');
+    expect(sbUserBody.active_until).toBeDefined();
+  });
+
+  it('users upsert shares the same active_until as club_members', async () => {
+    fetchMock
+      .mockResolvedValueOnce(makePaymentFetch('approved', 'user@test.com|club:qlpm|30'))
+      .mockResolvedValueOnce({ status: 200 })
+      .mockResolvedValueOnce({ status: 200 });
+
+    const res = makeRes();
+    await handler(makeReq({ topic: 'payment', id: 'pay_001' }), res);
+
+    const clubBody = JSON.parse(fetchMock.mock.calls[1][1].body);
+    const userBody = JSON.parse(fetchMock.mock.calls[2][1].body);
+    expect(clubBody.active_until).toBe(userBody.active_until);
   });
 
   it('writes to users (not club_members) for premium plan', async () => {
@@ -70,6 +102,7 @@ describe('mp-webhook — rama club:', () => {
     const sbCall = fetchMock.mock.calls[1];
     expect(sbCall[0]).toContain('/rest/v1/users');
     expect(sbCall[0]).not.toContain('club_members');
+    expect(fetchMock).toHaveBeenCalledTimes(2); // solo MP + users, no club_members
   });
 
   it('does not write anything when payment is not approved', async () => {
@@ -79,28 +112,28 @@ describe('mp-webhook — rama club:', () => {
     await handler(makeReq({ topic: 'payment', id: 'pay_001' }), res);
 
     expect(res._body).toBe('not approved');
-    // Only 1 fetch call (the payment lookup), no Supabase write
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('sets active_until ~30 days from now for club payment', async () => {
-    let capturedBody = null;
+  it('sets active_until ~30 days from now for both club_members and users', async () => {
     fetchMock
       .mockResolvedValueOnce(makePaymentFetch('approved', 'user@test.com|club:qlpm|30'))
-      .mockImplementationOnce((url, opts) => {
-        capturedBody = JSON.parse(opts.body);
-        return Promise.resolve({ status: 200 });
-      });
+      .mockResolvedValueOnce({ status: 200 })
+      .mockResolvedValueOnce({ status: 200 });
 
     const res = makeRes();
     const before = Date.now();
     await handler(makeReq({ topic: 'payment', id: 'pay_001' }), res);
     const after = Date.now();
 
-    const activeUntil = new Date(capturedBody.active_until).getTime();
     const expectedMin = before + 29 * 24 * 3600 * 1000;
     const expectedMax = after + 31 * 24 * 3600 * 1000;
-    expect(activeUntil).toBeGreaterThanOrEqual(expectedMin);
-    expect(activeUntil).toBeLessThanOrEqual(expectedMax);
+
+    for (const callIndex of [1, 2]) {
+      const body = JSON.parse(fetchMock.mock.calls[callIndex][1].body);
+      const activeUntil = new Date(body.active_until).getTime();
+      expect(activeUntil).toBeGreaterThanOrEqual(expectedMin);
+      expect(activeUntil).toBeLessThanOrEqual(expectedMax);
+    }
   });
 });
