@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Clubes — Admin PercuSignal</title>
+<link rel="icon" type="image/svg+xml" href="/app/favicon.svg"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0c0c;--bg2:#111111;--bg3:#161616;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.15);
+  --text:#f0ede8;--muted:#7a7671;
+  --gold:#e8d5a3;--gold2:#c4a96a;
+  --green:#4caf7d;--font:'Space Grotesk',sans-serif;--mono:'Space Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);background:rgba(12,12,12,0.94);backdrop-filter:blur(10px);}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none;}
+.mark{width:34px;height:34px;border:1.5px solid var(--gold);border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mark-bars{display:flex;align-items:flex-end;gap:2.5px;height:16px;}
+.bar{background:var(--gold);border-radius:1px;width:3.5px;}
+.b1{height:7px}.b2{height:12px}.b3{height:9px}.b4{height:16px}.b5{height:11px}
+.logo-name{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.03em;line-height:1;}
+.logo-sub{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;}
+.admin-badge{font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--bg3);border:1px solid var(--border);padding:4px 10px;border-radius:3px;letter-spacing:.1em;text-transform:uppercase;}
+main{flex:1;padding:48px;}
+.page-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin-bottom:6px;}
+h1{font-size:26px;font-weight:700;letter-spacing:-.03em;color:var(--gold);margin-bottom:32px;}
+.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:28px;flex-wrap:wrap;}
+.updated-at{font-family:var(--mono);font-size:11px;color:var(--muted);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:4px;border:none;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s;}
+.btn-primary{background:var(--gold2);color:#0c0c0c;}
+.btn-primary:hover{opacity:.85;}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text);}
+.btn-outline:hover{border-color:var(--gold2);color:var(--gold2);}
+/* Clubs grid */
+.clubs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:40px;}
+.club-card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:20px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s;}
+.club-card:hover{border-color:var(--border2);}
+.club-card-name{font-size:16px;font-weight:700;letter-spacing:-.02em;color:var(--text);}
+.club-card-meta{font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:10px;}
+.club-card-meta span{background:var(--bg3);border:1px solid var(--border);padding:3px 8px;border-radius:3px;}
+.club-card-link{font-family:var(--mono);font-size:11px;color:var(--gold2);text-decoration:none;margin-top:4px;letter-spacing:.04em;}
+.club-card-link:hover{text-decoration:underline;}
+/* Create club form */
+.create-section{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:28px;margin-bottom:32px;}
+.create-section h2{font-size:15px;font-weight:700;letter-spacing:-.01em;color:rgba(240,237,232,0.7);margin-bottom:22px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-group{display:flex;flex-direction:column;gap:7px;}
+label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;}
+input[type="text"],input[type="email"],input[type="number"]{background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:14px;padding:11px 14px;outline:none;width:100%;transition:border-color .15s;}
+input:focus{border-color:rgba(232,213,163,0.4);}
+input::placeholder{color:var(--muted);}
+.form-actions{margin-top:20px;display:flex;align-items:center;gap:14px;}
+.feedback-msg{font-family:var(--mono);font-size:12px;display:none;}
+.feedback-msg.ok{color:var(--green);}
+.feedback-msg.err{color:#e85a4f;}
+/* Auth screen */
+.auth-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:48px 20px;}
+.auth-card{width:100%;max-width:380px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:40px;}
+.auth-title{font-size:18px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px;}
+.auth-sub{font-size:13px;color:var(--muted);margin-bottom:28px;}
+.auth-form-group{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+.error-msg{font-family:var(--mono);font-size:12px;color:#e85a4f;margin-top:8px;display:none;}
+footer{border-top:1px solid var(--border);padding:24px 48px;}
+.foot-copy{font-family:var(--mono);font-size:11px;color:var(--muted);}
+@media(max-width:768px){nav{padding:14px 20px;}main{padding:24px 20px;}.form-grid{grid-template-columns:1fr;}footer{padding:24px 20px;}}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="/">
+    <div class="mark">
+      <div class="mark-bars">
+        <div class="bar b1"></div><div class="bar b2"></div><div class="bar b3"></div>
+        <div class="bar b4"></div><div class="bar b5"></div>
+      </div>
+    </div>
+    <div>
+      <div class="logo-name">PercuSignal</div>
+      <div class="logo-sub">Rhythm Tools</div>
+    </div>
+  </a>
+  <span class="admin-badge">Admin · Clubes</span>
+</nav>
+
+<!-- Auth screen -->
+<div id="auth-screen" class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-title">Acceso admin</div>
+    <div class="auth-sub">Ingresá la clave para gestionar los clubes.</div>
+    <div class="auth-form-group">
+      <label for="secret-input">Clave de acceso</label>
+      <input type="text" id="secret-input" placeholder="Ingresá la clave" autocomplete="off"/>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:13px;" onclick="doLogin()">Entrar</button>
+    <div class="error-msg" id="auth-error">Acceso no autorizado.</div>
+  </div>
+</div>
+
+<!-- Panel principal -->
+<main id="main-panel" style="display:none">
+  <div class="page-label">Admin</div>
+  <h1>Clubes</h1>
+
+  <div class="toolbar">
+    <span class="updated-at" id="updated-at">—</span>
+    <button class="btn btn-outline" onclick="loadClubs()">↻ Actualizar</button>
+    <button class="btn btn-outline" onclick="doLogout()">Cerrar sesión</button>
+  </div>
+
+  <div class="clubs-grid" id="clubs-grid">
+    <div style="color:var(--muted);font-family:var(--mono);font-size:12px;">Cargando...</div>
+  </div>
+
+  <div class="create-section">
+    <h2>Crear club nuevo</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="new-id">ID (slug)</label>
+        <input type="text" id="new-id" placeholder="mi-club"/>
+      </div>
+      <div class="form-group">
+        <label for="new-name">Nombre</label>
+        <input type="text" id="new-name" placeholder="Nombre del club"/>
+      </div>
+      <div class="form-group">
+        <label for="new-amount">Cuota mensual (ARS)</label>
+        <input type="number" id="new-amount" placeholder="2500" min="1"/>
+      </div>
+      <div class="form-group">
+        <label for="new-admin">Email admin</label>
+        <input type="email" id="new-admin" placeholder="admin@ejemplo.com"/>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="createClub()">Crear club</button>
+      <div class="feedback-msg" id="create-feedback"></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span class="foot-copy">© 2026 PercuSignal · Buenos Aires 🇦🇷</span>
+</footer>
+
+<script>
+const STORAGE_KEY = 'ps_admin_key_clubs';
+let adminKey = '';
+
+function formatAmount(n) {
+  return '$' + Number(n).toLocaleString('es-AR');
+}
+
+async function doLogin() {
+  const key = document.getElementById('secret-input').value.trim();
+  if (!key) return;
+  const err = document.getElementById('auth-error');
+  err.style.display = 'none';
+
+  const r = await fetch('/api/get-clubs', { headers: { 'x-admin-key': key } });
+  if (r.status === 401) { err.style.display = ''; return; }
+
+  adminKey = key;
+  sessionStorage.setItem(STORAGE_KEY, key);
+  const data = await r.json();
+  showPanel(data.clubs || []);
+}
+
+function doLogout() {
+  sessionStorage.removeItem(STORAGE_KEY);
+  adminKey = '';
+  document.getElementById('secret-input').value = '';
+  document.getElementById('main-panel').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+
+async function loadClubs() {
+  if (!adminKey) return;
+  const r = await fetch('/api/get-clubs', { headers: { 'x-admin-key': adminKey } });
+  if (r.status === 401) { doLogout(); return; }
+  const data = await r.json();
+  renderClubs(data.clubs || []);
+  document.getElementById('updated-at').textContent =
+    'Actualizado: ' + new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function showPanel(clubs) {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('main-panel').style.display = '';
+  document.getElementById('updated-at').textContent =
+    'Actualizado: ' + new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  renderClubs(clubs);
+}
+
+function renderClubs(clubs) {
+  const grid = document.getElementById('clubs-grid');
+  if (!clubs.length) {
+    grid.innerHTML = '<div style="color:var(--muted);font-family:var(--mono);font-size:12px;">No hay clubes registrados.</div>';
+    return;
+  }
+  grid.innerHTML = clubs.map(c => `
+    <div class="club-card">
+      <div class="club-card-name">${c.name}</div>
+      <div class="club-card-meta">
+        <span>${formatAmount(c.monthly_amount)}/mes</span>
+        <span>${c.member_count} miembro${c.member_count !== 1 ? 's' : ''}</span>
+        <span style="font-family:var(--mono);font-size:10px;">${c.id}</span>
+      </div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--muted);">${c.admin_email}</div>
+      <a class="club-card-link" href="/admin/club/${c.id}">Ver panel del club →</a>
+    </div>
+  `).join('');
+}
+
+async function createClub() {
+  const id = document.getElementById('new-id').value.trim();
+  const name = document.getElementById('new-name').value.trim();
+  const monthly_amount = document.getElementById('new-amount').value.trim();
+  const admin_email = document.getElementById('new-admin').value.trim();
+  const fb = document.getElementById('create-feedback');
+  fb.style.display = 'none';
+
+  if (!id || !name || !monthly_amount || !admin_email) {
+    fb.textContent = 'Completá todos los campos.';
+    fb.className = 'feedback-msg err';
+    fb.style.display = '';
+    return;
+  }
+
+  try {
+    const r = await fetch('/api/create-club', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+      body: JSON.stringify({ id, name, monthly_amount: parseInt(monthly_amount), admin_email })
+    });
+    const data = await r.json();
+    if (!r.ok) {
+      fb.textContent = data.error || 'Error al crear el club.';
+      fb.className = 'feedback-msg err';
+      fb.style.display = '';
+      return;
+    }
+    ['new-id','new-name','new-amount','new-admin'].forEach(f => { document.getElementById(f).value = ''; });
+    fb.textContent = `Club "${name}" creado correctamente.`;
+    fb.className = 'feedback-msg ok';
+    fb.style.display = '';
+    await loadClubs();
+  } catch(e) {
+    fb.textContent = 'Error de conexión.';
+    fb.className = 'feedback-msg err';
+    fb.style.display = '';
+  }
+}
+
+document.getElementById('secret-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+const savedKey = sessionStorage.getItem(STORAGE_KEY);
+if (savedKey) {
+  adminKey = savedKey;
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('main-panel').style.display = '';
+  loadClubs();
+}
+</script>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>
