@@ -108,8 +108,19 @@ footer{border-top:1px solid var(--border);padding:24px 48px;display:flex;align-i
       <button class="btn btn-primary" id="pay-btn" onclick="startPayment()" style="display:none">
         Pagar mes ($2.500)
       </button>
+      <button class="btn btn-primary" id="enter-btn" onclick="enterApp(currentEmail, false)" style="display:none;margin-top:0">
+        Entrar a la app
+      </button>
       <hr class="divider"/>
       <button class="btn btn-outline" onclick="resetForm()">Consultar otro email</button>
+    </div>
+    <div id="view-redirecting" style="display:none">
+      <div class="status-card active" id="redirect-card">
+        <div class="status-icon" id="redirect-icon">✅</div>
+        <div class="status-title active" id="redirect-title"></div>
+        <div class="status-detail" id="redirect-detail"></div>
+      </div>
+      <div class="loading-text"><span class="spinner"></span><span id="redirect-sub">Redirigiendo...</span></div>
     </div>
     <div id="view-private" style="display:none">
       <div class="status-card private">
@@ -151,7 +162,7 @@ function formatDate(iso) {
 }
 
 function showView(name) {
-  ['form','loading','status','private'].forEach(v =>
+  ['form','loading','status','redirecting','private'].forEach(v =>
     document.getElementById('view-'+v).style.display = v === name ? '' : 'none'
   );
 }
@@ -187,6 +198,7 @@ function renderStatus(data) {
   const title = document.getElementById('status-title');
   const detail = document.getElementById('status-detail');
   const payBtn = document.getElementById('pay-btn');
+  const enterBtn = document.getElementById('enter-btn');
 
   title.className = 'status-title ' + data.status;
 
@@ -195,16 +207,19 @@ function renderStatus(data) {
     title.textContent = 'Al día';
     detail.textContent = `Cuota paga hasta el ${formatDate(data.active_until)} (${data.days_left} día${data.days_left !== 1 ? 's' : ''} restante${data.days_left !== 1 ? 's' : ''})`;
     payBtn.style.display = 'none';
+    enterBtn.style.display = '';
   } else if (data.status === 'expired') {
     icon.textContent = '⚠️';
     title.textContent = 'Cuota vencida';
     detail.textContent = `Venció el ${formatDate(data.active_until)}. Pagá para renovar.`;
     payBtn.style.display = '';
+    enterBtn.style.display = 'none';
   } else {
     icon.textContent = '⭕';
     title.textContent = 'Sin pago registrado';
     detail.textContent = 'No hay pagos anteriores registrados para este email.';
     payBtn.style.display = '';
+    enterBtn.style.display = 'none';
   }
 }
 
@@ -238,6 +253,34 @@ function resetForm() {
   showView('form');
 }
 
+// Escribe percusignal_user en localStorage y redirige a /app
+async function enterApp(email, fromPayment) {
+  document.getElementById('redirect-icon').textContent = fromPayment ? '✅' : '🥁';
+  document.getElementById('redirect-title').textContent = fromPayment ? '¡Pago confirmado!' : 'Cargando tu sesión...';
+  document.getElementById('redirect-detail').textContent = fromPayment ? 'Tu cuota está registrada.' : '';
+  document.getElementById('redirect-sub').textContent = 'Entrando a la app...';
+  showView('redirecting');
+
+  try {
+    const r = await fetch(`/api/get-user-plan?email=${encodeURIComponent(email)}`);
+    const data = await r.json();
+    localStorage.setItem('percusignal_user', JSON.stringify({
+      email,
+      plan: data.plan || 'free',
+      active_until: data.active_until || null
+    }));
+  } catch(e) {
+    // Si el fetch falla, escribir premium de todas formas (ya pagó)
+    localStorage.setItem('percusignal_user', JSON.stringify({
+      email,
+      plan: 'premium',
+      active_until: null
+    }));
+  }
+
+  setTimeout(() => { location.href = '/app'; }, fromPayment ? 2500 : 1200);
+}
+
 // Al volver de Mercado Pago
 async function handleReturn() {
   const params = new URLSearchParams(location.search);
@@ -249,11 +292,8 @@ async function handleReturn() {
     showView('loading');
     // Dar tiempo al webhook de procesar
     await new Promise(r => setTimeout(r, 2000));
-    const r = await fetch(`/api/get-club-status?club_id=${encodeURIComponent(clubId)}&email=${encodeURIComponent(email)}`);
-    const data = await r.json();
     history.replaceState({}, '', location.pathname);
-    if (data.member) { renderStatus(data); showView('status'); }
-    else { showView('form'); }
+    await enterApp(email, true);
   }
 }
 
