@@ -62,8 +62,18 @@ tr:hover td{background:var(--bg2);}
 .auth-sub{font-size:13px;color:var(--muted);margin-bottom:28px;}
 .form-group{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
 label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;}
-input[type="text"]{background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:15px;padding:12px 16px;outline:none;width:100%;transition:border-color .15s;}
-input[type="text"]:focus{border-color:rgba(232,213,163,0.4);}
+input[type="text"],input[type="email"]{background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:15px;padding:12px 16px;outline:none;width:100%;transition:border-color .15s;}
+input[type="text"]:focus,input[type="email"]:focus{border-color:rgba(232,213,163,0.4);}
+.btn-danger{background:transparent;border:1px solid rgba(232,90,79,0.35);color:var(--red);font-size:11px;padding:5px 10px;width:auto;}
+.btn-danger:hover{background:rgba(232,90,79,0.08);}
+.add-member-section{margin-top:28px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:24px;}
+.add-member-section h2{font-size:14px;font-weight:700;letter-spacing:-.01em;margin-bottom:20px;color:rgba(240,237,232,0.7);}
+.add-member-row{display:flex;gap:12px;flex-wrap:wrap;}
+.add-member-row .form-group{flex:1;min-width:160px;margin-bottom:0;}
+.add-member-row .btn{width:auto;align-self:flex-end;white-space:nowrap;padding:12px 20px;font-size:13px;}
+.feedback-msg{font-family:var(--mono);font-size:12px;margin-top:10px;display:none;}
+.feedback-msg.ok{color:var(--green);}
+.feedback-msg.err{color:var(--red);}
 .btn-primary{background:var(--gold2);color:#0c0c0c;width:100%;justify-content:center;padding:13px;}
 .btn-primary:hover{opacity:.85;}
 .error-msg{font-family:var(--mono);font-size:12px;color:var(--red);margin-top:8px;display:none;}
@@ -120,6 +130,7 @@ footer{border-top:1px solid var(--border);padding:24px 48px;display:flex;align-i
   </div>
 
   <div class="toolbar">
+    <a href="/admin/clubs" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;letter-spacing:.04em;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">← Todos los clubes</a>
     <span class="updated-at" id="updated-at">—</span>
     <button class="btn btn-outline" onclick="loadMembers()">↻ Actualizar</button>
     <button class="btn btn-outline" onclick="doLogout()">Cerrar sesión</button>
@@ -132,7 +143,7 @@ footer{border-top:1px solid var(--border);padding:24px 48px;display:flex;align-i
     <div class="summary-chip"><span class="chip-value" id="count-total">—</span><span class="chip-label">Total</span></div>
   </div>
 
-  <div style="overflow-x:auto;background:var(--bg2);border:1px solid var(--border);border-radius:6px;">
+  <div id="table-wrap" style="overflow-x:auto;background:var(--bg2);border:1px solid var(--border);border-radius:6px;">
     <table id="members-table">
       <thead>
         <tr>
@@ -141,12 +152,29 @@ footer{border-top:1px solid var(--border);padding:24px 48px;display:flex;align-i
           <th>Estado</th>
           <th>Vence</th>
           <th>Último pago</th>
+          <th></th>
         </tr>
       </thead>
       <tbody id="table-body">
-        <tr><td colspan="5" style="color:var(--muted);font-family:var(--mono);font-size:12px;text-align:center;padding:32px;">Cargando miembros...</td></tr>
+        <tr><td colspan="6" style="color:var(--muted);font-family:var(--mono);font-size:12px;text-align:center;padding:32px;">Cargando miembros...</td></tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="add-member-section">
+    <h2>Agregar miembro</h2>
+    <div class="add-member-row">
+      <div class="form-group">
+        <label for="add-email">Email</label>
+        <input type="email" id="add-email" placeholder="nombre@ejemplo.com" autocomplete="off"/>
+      </div>
+      <div class="form-group">
+        <label for="add-name">Nombre (opcional)</label>
+        <input type="text" id="add-name" placeholder="Juan García"/>
+      </div>
+      <button class="btn btn-primary" onclick="addMember()">+ Agregar</button>
+    </div>
+    <div class="feedback-msg" id="add-feedback"></div>
   </div>
 </main>
 
@@ -227,22 +255,83 @@ function renderTable(members) {
       ? `<span class="days-chip">${m.days_left}d</span>`
       : '';
 
+    const emailSafe = m.email.replace(/'/g, "\\'");
     return `<tr>
       <td>${m.display_name || '<span style="color:var(--muted)">—</span>'}</td>
       <td class="email-cell">${m.email}</td>
       <td>${badge} ${daysCell}</td>
       <td class="date-cell">${formatDate(m.active_until)}</td>
       <td class="date-cell">${m.mp_subscription_id ? formatDate(m.updated_at) : '—'}</td>
+      <td><button class="btn btn-danger" onclick="removeMember('${emailSafe}')">Quitar</button></td>
     </tr>`;
   }).join('');
 
   document.getElementById('table-body').innerHTML = rows ||
-    '<tr><td colspan="5" style="color:var(--muted);font-family:var(--mono);font-size:12px;text-align:center;padding:32px;">Sin miembros registrados.</td></tr>';
+    '<tr><td colspan="6" style="color:var(--muted);font-family:var(--mono);font-size:12px;text-align:center;padding:32px;">Sin miembros registrados.</td></tr>';
 
   document.getElementById('count-active').textContent = active;
   document.getElementById('count-expired').textContent = expired;
   document.getElementById('count-never').textContent = never;
   document.getElementById('count-total').textContent = members.length;
+}
+
+async function addMember() {
+  const email = document.getElementById('add-email').value.trim();
+  const display_name = document.getElementById('add-name').value.trim();
+  const fb = document.getElementById('add-feedback');
+  fb.style.display = 'none';
+
+  if (!email || !email.includes('@')) {
+    fb.textContent = 'Ingresá un email válido.';
+    fb.className = 'feedback-msg err';
+    fb.style.display = '';
+    return;
+  }
+
+  try {
+    const r = await fetch('/api/add-club-member', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+      body: JSON.stringify({ club_id: clubId, email, display_name: display_name || null })
+    });
+    const data = await r.json();
+    if (!r.ok) {
+      fb.textContent = data.error || 'Error al agregar miembro.';
+      fb.className = 'feedback-msg err';
+      fb.style.display = '';
+      return;
+    }
+    document.getElementById('add-email').value = '';
+    document.getElementById('add-name').value = '';
+    fb.textContent = `${email} agregado correctamente.`;
+    fb.className = 'feedback-msg ok';
+    fb.style.display = '';
+    await loadMembers();
+  } catch(e) {
+    fb.textContent = 'Error de conexión.';
+    fb.className = 'feedback-msg err';
+    fb.style.display = '';
+  }
+}
+
+async function removeMember(email) {
+  if (!confirm(`¿Quitar a ${email} del club?\nEsto elimina al miembro de la lista, no cancela pagos anteriores.`)) return;
+
+  try {
+    const r = await fetch('/api/remove-club-member', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+      body: JSON.stringify({ club_id: clubId, email })
+    });
+    if (!r.ok) {
+      const data = await r.json().catch(() => ({}));
+      alert(data.error || 'Error al quitar miembro.');
+      return;
+    }
+    await loadMembers();
+  } catch(e) {
+    alert('Error de conexión.');
+  }
 }
 
 // Auto-login si hay clave guardada en sesión

@@ -4,6 +4,7 @@
     { "source": "/privacidad",       "destination": "/privacidad.html" },
     { "source": "/terminos",         "destination": "/terminos.html" },
     { "source": "/club/:id",         "destination": "/club.html" },
+    { "source": "/admin/clubs",      "destination": "/admin-clubs.html" },
     { "source": "/admin/club/:id",   "destination": "/admin-club.html" }
   ],
   "headers": [
