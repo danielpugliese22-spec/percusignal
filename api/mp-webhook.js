@@ -141,7 +141,7 @@ async function processPayment(paymentId, res) {
       updated_at: new Date().toISOString()
     };
 
-    const sbClubRes = await fetch(`${SUPABASE_URL}/rest/v1/club_members`, {
+    const sbClubRes = await fetch(`${SUPABASE_URL}/rest/v1/club_members?on_conflict=club_id,email`, {
       method: 'POST', headers: sbHeaders,
       body: JSON.stringify({ club_id: clubId, email, ...payerData })
     });
