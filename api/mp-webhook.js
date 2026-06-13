@@ -123,28 +123,35 @@ async function processPayment(paymentId, res) {
 
   const activeUntil = new Date(Date.now() + days * 24 * 3600 * 1000).toISOString();
 
-  // Pago de cuota de club → escribir en club_members
+  // Pago de cuota de club → actualizar club_members Y otorgar Premium en users
   if (planOrClub.startsWith('club:')) {
     const clubId = planOrClub.replace('club:', '');
-    const sbRes = await fetch(`${SUPABASE_URL}/rest/v1/club_members`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'PercuSignal-Webhook/1.0',
-        'Prefer': 'resolution=merge-duplicates,return=representation'
-      },
-      body: JSON.stringify({
-        club_id: clubId,
-        email,
-        mp_payer_id: String(payment.payer?.id || ''),
-        mp_subscription_id: String(payment.id),
-        active_until: activeUntil,
-        updated_at: new Date().toISOString()
-      })
+    const sbHeaders = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'User-Agent': 'PercuSignal-Webhook/1.0',
+      'Prefer': 'resolution=merge-duplicates,return=representation'
+    };
+    const payerData = {
+      mp_payer_id: String(payment.payer?.id || ''),
+      mp_subscription_id: String(payment.id),
+      active_until: activeUntil,
+      updated_at: new Date().toISOString()
+    };
+
+    const sbClubRes = await fetch(`${SUPABASE_URL}/rest/v1/club_members`, {
+      method: 'POST', headers: sbHeaders,
+      body: JSON.stringify({ club_id: clubId, email, ...payerData })
     });
-    console.log('Club member update:', sbRes.status);
+    console.log('Club member update:', sbClubRes.status);
+
+    const sbUserRes = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
+      method: 'POST', headers: sbHeaders,
+      body: JSON.stringify({ email, plan: 'premium', ...payerData })
+    });
+    console.log('User premium update (club):', sbUserRes.status);
+
     return res.status(200).send('OK - club');
   }
 
