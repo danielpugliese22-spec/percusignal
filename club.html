@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Club PercuSignal</title>
+<link rel="icon" type="image/svg+xml" href="/app/favicon.svg"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0c0c;--bg2:#111111;--bg3:#161616;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.15);
+  --text:#f0ede8;--muted:#7a7671;
+  --gold:#e8d5a3;--gold2:#c4a96a;
+  --green:#4caf7d;--green-bg:rgba(76,175,125,0.08);--green-border:rgba(76,175,125,0.25);
+  --orange:#e8a03a;--orange-bg:rgba(232,160,58,0.08);--orange-border:rgba(232,160,58,0.25);
+  --red:#e85a4f;--red-bg:rgba(232,90,79,0.08);--red-border:rgba(232,90,79,0.25);
+  --font:'Space Grotesk',sans-serif;--mono:'Space Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);background:rgba(12,12,12,0.94);backdrop-filter:blur(10px);}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none;}
+.mark{width:34px;height:34px;border:1.5px solid var(--gold);border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mark-bars{display:flex;align-items:flex-end;gap:2.5px;height:16px;}
+.bar{background:var(--gold);border-radius:1px;width:3.5px;}
+.b1{height:7px}.b2{height:12px}.b3{height:9px}.b4{height:16px}.b5{height:11px}
+.logo-name{font-family:var(--font);font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.03em;line-height:1;}
+.logo-sub{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;}
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:48px 20px;}
+.card{width:100%;max-width:440px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:40px;}
+.club-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin-bottom:8px;}
+.club-name{font-size:22px;font-weight:700;letter-spacing:-.03em;margin-bottom:32px;color:var(--gold);}
+.form-group{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+label{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;}
+input[type="email"]{background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--font);font-size:15px;padding:12px 16px;outline:none;transition:border-color .15s;width:100%;}
+input[type="email"]:focus{border-color:rgba(232,213,163,0.4);}
+input[type="email"]::placeholder{color:var(--muted);}
+.btn{display:block;width:100%;padding:13px 20px;border-radius:4px;border:none;font-family:var(--font);font-size:15px;font-weight:600;cursor:pointer;transition:opacity .15s;text-align:center;text-decoration:none;}
+.btn-primary{background:var(--gold2);color:#0c0c0c;}
+.btn-primary:hover{opacity:.85;}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text);margin-top:12px;}
+.btn-outline:hover{border-color:var(--gold2);color:var(--gold2);}
+.status-card{border-radius:6px;padding:20px 24px;margin-bottom:24px;}
+.status-card.active{background:var(--green-bg);border:1px solid var(--green-border);}
+.status-card.expired{background:var(--orange-bg);border:1px solid var(--orange-border);}
+.status-card.never_paid{background:var(--red-bg);border:1px solid var(--red-border);}
+.status-card.private{background:var(--bg3);border:1px solid var(--border);}
+.status-icon{font-size:28px;margin-bottom:10px;}
+.status-title{font-size:17px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px;}
+.status-title.active{color:var(--green);}
+.status-title.expired{color:var(--orange);}
+.status-title.never_paid,.status-title.private{color:var(--muted);}
+.status-detail{font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.6;}
+.greeting{font-size:14px;color:rgba(240,237,232,0.6);margin-bottom:16px;}
+.divider{border:none;border-top:1px solid var(--border);margin:24px 0;}
+.back-link{display:block;text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:16px;text-decoration:none;letter-spacing:.04em;}
+.back-link:hover{color:var(--text);}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,0.2);border-top-color:var(--gold2);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:var(--muted);font-family:var(--mono);font-size:13px;text-align:center;padding:20px 0;}
+footer{border-top:1px solid var(--border);padding:24px 48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+.foot-copy{font-family:var(--mono);font-size:11px;color:var(--muted);}
+.foot-links{display:flex;gap:24px;list-style:none;}
+.foot-links a{font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;transition:color .15s;}
+.foot-links a:hover{color:var(--text);}
+@media(max-width:640px){nav{padding:14px 20px;}footer{padding:24px 20px;}}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="/">
+    <div class="mark">
+      <div class="mark-bars">
+        <div class="bar b1"></div><div class="bar b2"></div><div class="bar b3"></div>
+        <div class="bar b4"></div><div class="bar b5"></div>
+      </div>
+    </div>
+    <div>
+      <div class="logo-name">PercuSignal</div>
+      <div class="logo-sub">Rhythm Tools</div>
+    </div>
+  </a>
+</nav>
+
+<main>
+  <div class="card">
+    <div class="club-label">Club</div>
+    <div class="club-name" id="club-name">Cargando...</div>
+    <div id="view-form">
+      <div class="form-group">
+        <label for="email-input">Tu email</label>
+        <input type="email" id="email-input" placeholder="nombre@ejemplo.com" autocomplete="email"/>
+      </div>
+      <button class="btn btn-primary" onclick="checkStatus()">Ver mi estado</button>
+    </div>
+    <div id="view-loading" style="display:none">
+      <div class="loading-text"><span class="spinner"></span>Consultando...</div>
+    </div>
+    <div id="view-status" style="display:none">
+      <div class="greeting" id="status-greeting"></div>
+      <div class="status-card" id="status-card">
+        <div class="status-icon" id="status-icon"></div>
+        <div class="status-title" id="status-title"></div>
+        <div class="status-detail" id="status-detail"></div>
+      </div>
+      <button class="btn btn-primary" id="pay-btn" onclick="startPayment()" style="display:none">
+        Pagar mes ($2.500)
+      </button>
+      <hr class="divider"/>
+      <button class="btn btn-outline" onclick="resetForm()">Consultar otro email</button>
+    </div>
+    <div id="view-private" style="display:none">
+      <div class="status-card private">
+        <div class="status-icon">🔒</div>
+        <div class="status-title private">Club privado</div>
+        <div class="status-detail">Este email no está en la lista de miembros.<br/>Si creés que es un error, contactá al organizador.</div>
+      </div>
+      <hr class="divider"/>
+      <button class="btn btn-outline" onclick="resetForm()">Intentar con otro email</button>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span class="foot-copy">© 2026 PercuSignal · Buenos Aires 🇦🇷</span>
+  <ul class="foot-links">
+    <li><a href="/">Inicio</a></li>
+    <li><a href="/privacidad">Privacidad</a></li>
+    <li><a href="/terminos">Términos</a></li>
+    <li><a href="mailto:hola@percusignal.com.ar">Contacto</a></li>
+  </ul>
+</footer>
+
+<script>
+const clubId = location.pathname.split('/').filter(Boolean)[1] || '';
+let currentEmail = '';
+let clubMonthlyAmount = 2500;
+
+async function loadClubName() {
+  try {
+    const r = await fetch(`/api/get-club-status?club_id=${encodeURIComponent(clubId)}&email=__probe__`);
+  } catch(e) {}
+  document.getElementById('club-name').textContent = decodeURIComponent(clubId.replace(/-/g, ' '));
+}
+
+function formatDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function showView(name) {
+  ['form','loading','status','private'].forEach(v =>
+    document.getElementById('view-'+v).style.display = v === name ? '' : 'none'
+  );
+}
+
+async function checkStatus() {
+  const email = document.getElementById('email-input').value.trim();
+  if (!email || !email.includes('@')) {
+    document.getElementById('email-input').focus();
+    return;
+  }
+  currentEmail = email;
+  showView('loading');
+  try {
+    const r = await fetch(`/api/get-club-status?club_id=${encodeURIComponent(clubId)}&email=${encodeURIComponent(email)}`);
+    const data = await r.json();
+    if (!data.member) { showView('private'); return; }
+    renderStatus(data);
+    showView('status');
+  } catch(e) {
+    showView('form');
+    alert('Error de conexión. Intentá de nuevo.');
+  }
+}
+
+function renderStatus(data) {
+  const name = data.display_name ? data.display_name.split(' ')[0] : '';
+  document.getElementById('status-greeting').textContent = name ? `Hola, ${name}` : '';
+
+  const card = document.getElementById('status-card');
+  card.className = 'status-card ' + data.status;
+
+  const icon = document.getElementById('status-icon');
+  const title = document.getElementById('status-title');
+  const detail = document.getElementById('status-detail');
+  const payBtn = document.getElementById('pay-btn');
+
+  title.className = 'status-title ' + data.status;
+
+  if (data.status === 'active') {
+    icon.textContent = '✅';
+    title.textContent = 'Al día';
+    detail.textContent = `Cuota paga hasta el ${formatDate(data.active_until)} (${data.days_left} día${data.days_left !== 1 ? 's' : ''} restante${data.days_left !== 1 ? 's' : ''})`;
+    payBtn.style.display = 'none';
+  } else if (data.status === 'expired') {
+    icon.textContent = '⚠️';
+    title.textContent = 'Cuota vencida';
+    detail.textContent = `Venció el ${formatDate(data.active_until)}. Pagá para renovar.`;
+    payBtn.style.display = '';
+  } else {
+    icon.textContent = '⭕';
+    title.textContent = 'Sin pago registrado';
+    detail.textContent = 'No hay pagos anteriores registrados para este email.';
+    payBtn.style.display = '';
+  }
+}
+
+async function startPayment() {
+  const btn = document.getElementById('pay-btn');
+  btn.disabled = true;
+  btn.textContent = 'Iniciando...';
+  try {
+    const r = await fetch('/api/create-club-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ club_id: clubId, email: currentEmail })
+    });
+    const data = await r.json();
+    if (data.init_point) {
+      location.href = data.init_point;
+    } else {
+      alert(data.error || 'Error al iniciar el pago.');
+      btn.disabled = false;
+      btn.textContent = 'Pagar mes ($2.500)';
+    }
+  } catch(e) {
+    alert('Error de conexión.');
+    btn.disabled = false;
+    btn.textContent = 'Pagar mes ($2.500)';
+  }
+}
+
+function resetForm() {
+  document.getElementById('email-input').value = '';
+  showView('form');
+}
+
+// Al volver de Mercado Pago
+async function handleReturn() {
+  const params = new URLSearchParams(location.search);
+  const subscribed = params.get('subscribed');
+  const email = params.get('email');
+  if (subscribed === 'true' && email) {
+    currentEmail = email;
+    document.getElementById('email-input').value = email;
+    showView('loading');
+    // Dar tiempo al webhook de procesar
+    await new Promise(r => setTimeout(r, 2000));
+    const r = await fetch(`/api/get-club-status?club_id=${encodeURIComponent(clubId)}&email=${encodeURIComponent(email)}`);
+    const data = await r.json();
+    history.replaceState({}, '', location.pathname);
+    if (data.member) { renderStatus(data); showView('status'); }
+    else { showView('form'); }
+  }
+}
+
+document.getElementById('email-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkStatus();
+});
+
+document.getElementById('club-name').textContent =
+  clubId === 'qlpm' ? 'Qué le pasa a María?' : clubId;
+
+handleReturn();
+</script>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>

@@ -1,8 +1,10 @@
 {
   "rewrites": [
-    { "source": "/app",        "destination": "/app/" },
-    { "source": "/privacidad", "destination": "/privacidad.html" },
-    { "source": "/terminos",   "destination": "/terminos.html" }
+    { "source": "/app",              "destination": "/app/" },
+    { "source": "/privacidad",       "destination": "/privacidad.html" },
+    { "source": "/terminos",         "destination": "/terminos.html" },
+    { "source": "/club/:id",         "destination": "/club.html" },
+    { "source": "/admin/club/:id",   "destination": "/admin-club.html" }
   ],
   "headers": [
     {
