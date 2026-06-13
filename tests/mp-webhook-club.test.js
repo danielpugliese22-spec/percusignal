@@ -115,6 +115,28 @@ describe('mp-webhook — rama club:', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('upsert a club_members usa on_conflict=club_id,email para actualizar miembro existente', async () => {
+    // Regresión: sin on_conflict PostgREST usaba ON CONFLICT (id) y el INSERT
+    // fallaba silenciosamente en la constraint UNIQUE(club_id,email) → active_until nunca se actualizaba.
+    fetchMock
+      .mockResolvedValueOnce(makePaymentFetch('approved', 'member@test.com|club:qlpm|30'))
+      .mockResolvedValueOnce({ status: 200 }) // club_members
+      .mockResolvedValueOnce({ status: 200 }); // users
+
+    const res = makeRes();
+    await handler(makeReq({ topic: 'payment', id: 'pay_001' }), res);
+
+    const sbClubCall = fetchMock.mock.calls[1];
+    expect(sbClubCall[0]).toContain('/rest/v1/club_members');
+    expect(sbClubCall[0]).toContain('on_conflict=club_id,email');
+
+    // Verifica que active_until llega en el body (el upsert tiene los datos correctos)
+    const body = JSON.parse(sbClubCall[1].body);
+    expect(body.active_until).toBeDefined();
+    expect(body.club_id).toBe('qlpm');
+    expect(body.email).toBe('member@test.com');
+  });
+
   it('sets active_until ~30 days from now for both club_members and users', async () => {
     fetchMock
       .mockResolvedValueOnce(makePaymentFetch('approved', 'user@test.com|club:qlpm|30'))

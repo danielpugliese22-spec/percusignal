@@ -2,6 +2,7 @@
 // Vercel Serverless Function — recibe notificaciones de MP con verificación de firma
 
 import crypto from 'crypto';
+import { sendEmail, tplClubPaymentToAdmin, tplPremiumConfirmation, tplPremiumPaymentToAdmin } from './_email.js';
 
 const MP_TOKEN = process.env.MP_ACCESS_TOKEN;
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET; // ← agregar en Vercel env vars
@@ -140,7 +141,7 @@ async function processPayment(paymentId, res) {
       updated_at: new Date().toISOString()
     };
 
-    const sbClubRes = await fetch(`${SUPABASE_URL}/rest/v1/club_members`, {
+    const sbClubRes = await fetch(`${SUPABASE_URL}/rest/v1/club_members?on_conflict=club_id,email`, {
       method: 'POST', headers: sbHeaders,
       body: JSON.stringify({ club_id: clubId, email, ...payerData })
     });
@@ -151,6 +152,26 @@ async function processPayment(paymentId, res) {
       body: JSON.stringify({ email, plan: 'premium', ...payerData })
     });
     console.log('User premium update (club):', sbUserRes.status);
+
+    // Notificar al admin del club sobre el pago
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const clubRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/clubs?id=eq.${encodeURIComponent(clubId)}&select=name,admin_email`,
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+        );
+        const [club] = await clubRes.json();
+        if (club?.admin_email) {
+          await sendEmail({
+            to: club.admin_email,
+            subject: `Nuevo pago: ${email} — ${club.name}`,
+            html: tplClubPaymentToAdmin({ memberEmail: email, clubName: club.name, activeUntil })
+          });
+        }
+      } catch (e) {
+        console.error('[email] Club admin notify error:', e.message);
+      }
+    }
 
     return res.status(200).send('OK - club');
   }
@@ -179,5 +200,28 @@ async function processPayment(paymentId, res) {
   });
 
   console.log('Supabase response:', sbRes.status);
+
+  // Confirmar al usuario y notificar al admin general
+  if (process.env.RESEND_API_KEY) {
+    try {
+      await sendEmail({
+        to: email,
+        subject: '¡Ya sos Premium en PercuSignal! ✅',
+        html: tplPremiumConfirmation({ email, activeUntil })
+      });
+    } catch (e) {
+      console.error('[email] Premium confirm error:', e.message);
+    }
+    try {
+      await sendEmail({
+        to: 'danielpugliese22@gmail.com',
+        subject: `Nuevo pago Premium: ${email}`,
+        html: tplPremiumPaymentToAdmin({ email, amount: payment.transaction_amount })
+      });
+    } catch (e) {
+      console.error('[email] Premium admin notify error:', e.message);
+    }
+  }
+
   return res.status(200).send('OK');
 }
