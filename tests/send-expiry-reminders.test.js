@@ -186,3 +186,80 @@ describe('send-expiry-reminders — lógica', () => {
     expect(res._status).toBe(200);
   });
 });
+
+describe('send-expiry-reminders POST — invitaciones Premium', () => {
+  let fetchMock;
+  beforeEach(() => { fetchMock = vi.fn(); global.fetch = fetchMock; });
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  it('returns 401 without x-admin-key on POST', async () => {
+    const res = makeRes();
+    await handler(makeReq('POST', {}), res);
+    expect(res._status).toBe(401);
+  });
+
+  it('returns 401 if only cron auth is used for POST (requires x-admin-key)', async () => {
+    const res = makeRes();
+    await handler(makeReq('POST', CRON_HEADER), res);
+    expect(res._status).toBe(401);
+  });
+
+  it('queries Supabase for free users with limit 200', async () => {
+    fetchMock.mockResolvedValueOnce({ json: async () => [] });
+
+    const res = makeRes();
+    await handler(makeReq('POST', ADMIN_HEADER), res);
+
+    const call = fetchMock.mock.calls[0];
+    expect(call[0]).toContain('/rest/v1/users');
+    expect(call[0]).toContain('plan=eq.free');
+    expect(call[0]).toContain('limit=200');
+  });
+
+  it('returns 0 sent when no free users', async () => {
+    fetchMock.mockResolvedValueOnce({ json: async () => [] });
+
+    const res = makeRes();
+    await handler(makeReq('POST', ADMIN_HEADER), res);
+
+    expect(res._body.ok).toBe(true);
+    expect(res._body.sent).toBe(0);
+    expect(res._body.total).toBe(0);
+  });
+
+  it('sends one invite email per free user', async () => {
+    const users = [{ email: 'free1@test.com' }, { email: 'free2@test.com' }];
+
+    fetchMock
+      .mockResolvedValueOnce({ json: async () => users })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'e1' }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'e2' }) });
+
+    const res = makeRes();
+    await handler(makeReq('POST', ADMIN_HEADER), res);
+
+    expect(res._body.sent).toBe(2);
+    expect(res._body.errors).toBe(0);
+
+    const body = JSON.parse(fetchMock.mock.calls[1][1].body);
+    expect(body.to).toBe('free1@test.com');
+    expect(body.from).toBe('info@percusignal.com.ar');
+    expect(body.subject).toContain('Premium');
+  });
+
+  it('counts errors and continues when individual invite email fails', async () => {
+    const users = [{ email: 'ok@test.com' }, { email: 'fail@test.com' }];
+
+    fetchMock
+      .mockResolvedValueOnce({ json: async () => users })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'e1' }) })
+      .mockRejectedValueOnce(new Error('Resend down'));
+
+    const res = makeRes();
+    await handler(makeReq('POST', ADMIN_HEADER), res);
+
+    expect(res._body.sent).toBe(1);
+    expect(res._body.errors).toBe(1);
+    expect(res._status).toBe(200);
+  });
+});
