@@ -116,13 +116,41 @@ async function processPayment(paymentId, res) {
 
   const ref = (payment.external_reference || '').split('|');
   const email = ref[0] || payment.payer?.email;
-  const plan = ref[1] || 'premium_monthly';
+  const planOrClub = ref[1] || 'premium_monthly';
   const days = parseInt(ref[2]) || 30;
 
   if (!email) return res.status(200).send('no email');
 
-  const planType = plan.includes('pro') ? 'pro' : 'premium';
   const activeUntil = new Date(Date.now() + days * 24 * 3600 * 1000).toISOString();
+
+  // Pago de cuota de club → escribir en club_members
+  if (planOrClub.startsWith('club:')) {
+    const clubId = planOrClub.replace('club:', '');
+    const sbRes = await fetch(`${SUPABASE_URL}/rest/v1/club_members`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'PercuSignal-Webhook/1.0',
+        'Prefer': 'resolution=merge-duplicates,return=representation'
+      },
+      body: JSON.stringify({
+        club_id: clubId,
+        email,
+        mp_payer_id: String(payment.payer?.id || ''),
+        mp_subscription_id: String(payment.id),
+        active_until: activeUntil,
+        updated_at: new Date().toISOString()
+      })
+    });
+    console.log('Club member update:', sbRes.status);
+    return res.status(200).send('OK - club');
+  }
+
+  // Pago de plan Premium/Pro → escribir en users (comportamiento existente)
+  const plan = planOrClub;
+  const planType = plan.includes('pro') ? 'pro' : 'premium';
 
   const sbRes = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
     method: 'POST',
