@@ -1,2 +1,7 @@
 import './styles.css';
-// audio.js se carga como script clásico en index.html hasta Fase 4.3
+import { initAuth } from './auth.js';
+
+// Auth runs first — blocks until user has an active session.
+// The module writes the email to localStorage so the inline getUser()
+// in index.html can read it immediately after.
+initAuth();
