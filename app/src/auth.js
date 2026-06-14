@@ -1,6 +1,15 @@
 import { supabase } from './supabaseClient.js';
 
-// ── Logo SVG inline ──────────────────────────────────────────────
+// ── Fix #5: parchear logout de forma SINCRÓNICA al importar el módulo ────────
+// Corre antes de cualquier await, eliminando la race condition donde el usuario
+// podría clickear "Salir" y ejecutar el logout viejo (sin Supabase signOut).
+window.logout = async () => {
+  try { localStorage.removeItem('percusignal_user'); } catch {}
+  await supabase.auth.signOut();
+  location.reload();
+};
+
+// ── Logo ─────────────────────────────────────────────────────────────────────
 const LOGO_HTML = `
   <div style="display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:32px">
     <span style="font-size:22px;letter-spacing:-2px;color:#e8d5a3;font-family:'Space Mono',monospace">▌▌▌▌▌</span>
@@ -8,12 +17,26 @@ const LOGO_HTML = `
   </div>
 `;
 
-// ── Estado del overlay ───────────────────────────────────────────
+// ── Estado del overlay ───────────────────────────────────────────────────────
 let overlayEl = null;
 let resolveAuth = null;
-let magicLinkSent = false;
 
-// ── Crear y mostrar el overlay de auth ──────────────────────────
+// ── Fix #1: sesión local válida (flujo club) ─────────────────────────────────
+// Si el usuario llega desde /club/qlpm con un localStorage escrito por enterApp(),
+// tiene email + plan + active_until vigente → no bloquear el app con el overlay.
+function hasValidLocalSession() {
+  try {
+    const raw = localStorage.getItem('percusignal_user');
+    if (!raw) return false;
+    const u = JSON.parse(raw);
+    if (!u.email || !u.plan || !u.active_until) return false;
+    return new Date(u.active_until) > new Date();
+  } catch {
+    return false;
+  }
+}
+
+// ── Crear y mostrar el overlay de auth ───────────────────────────────────────
 function showAuthOverlay() {
   if (overlayEl) return;
 
@@ -33,24 +56,18 @@ function showAuthOverlay() {
 
   overlayEl.innerHTML = buildAuthHTML();
   document.body.appendChild(overlayEl);
-
   wireAuthEvents();
 }
 
 function buildAuthHTML(mode = 'default') {
   const magicSent = mode === 'magic-sent';
   const magicForm = mode === 'magic-form';
-
   return `
     <div style="width:100%;max-width:380px">
       ${LOGO_HTML}
-
       <div id="authCard" style="background:#111;border:1px solid #1a1a1a;padding:32px">
-
         ${magicSent ? buildMagicSentHTML() : magicForm ? buildMagicFormHTML() : buildDefaultHTML()}
-
       </div>
-
       <p style="text-align:center;margin-top:20px;font-size:10px;color:#333;letter-spacing:.04em">
         Al ingresar aceptás los
         <a href="/terminos" target="_blank" style="color:#444;text-decoration:underline">términos</a>
@@ -164,7 +181,7 @@ function buildMagicSentHTML() {
   `;
 }
 
-// ── Wiring de eventos ────────────────────────────────────────────
+// ── Wiring de eventos del overlay ────────────────────────────────────────────
 function wireAuthEvents() {
   const card = overlayEl?.querySelector('#authCard');
   if (!card) return;
@@ -172,18 +189,11 @@ function wireAuthEvents() {
   card.addEventListener('click', async (e) => {
     const id = e.target.closest('button')?.id;
     if (!id) return;
-
-    if (id === 'authGoogleBtn') {
-      await handleGoogleLogin();
-    } else if (id === 'authMagicLinkBtn') {
-      renderCard('magic-form');
-    } else if (id === 'authSendMagicBtn') {
-      await handleMagicLink();
-    } else if (id === 'authBackBtn') {
-      renderCard('default');
-    } else if (id === 'authResendBtn') {
-      renderCard('magic-form');
-    }
+    if (id === 'authGoogleBtn')    await handleGoogleLogin();
+    else if (id === 'authMagicLinkBtn') renderCard('magic-form');
+    else if (id === 'authSendMagicBtn') await handleMagicLink();
+    else if (id === 'authBackBtn')      renderCard('default');
+    else if (id === 'authResendBtn')    renderCard('magic-form');
   });
 
   const emailInput = card.querySelector('#authEmailInput');
@@ -198,9 +208,7 @@ function renderCard(mode) {
   if (!overlayEl) return;
   overlayEl.innerHTML = buildAuthHTML(mode);
   wireAuthEvents();
-  if (mode === 'magic-form') {
-    overlayEl.querySelector('#authEmailInput')?.focus();
-  }
+  if (mode === 'magic-form') overlayEl.querySelector('#authEmailInput')?.focus();
 }
 
 async function handleGoogleLogin() {
@@ -219,7 +227,7 @@ async function handleGoogleLogin() {
 async function handleMagicLink() {
   const input = overlayEl?.querySelector('#authEmailInput');
   const errEl = overlayEl?.querySelector('#authEmailError');
-  const btn = overlayEl?.querySelector('#authSendMagicBtn');
+  const btn   = overlayEl?.querySelector('#authSendMagicBtn');
 
   const email = input?.value.trim() || '';
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -257,86 +265,87 @@ function showAuthError(msg) {
   errBanner.textContent = msg;
 }
 
-// ── Quitar overlay cuando el usuario está autenticado ────────────
+// ── Quitar overlay ───────────────────────────────────────────────────────────
 function removeAuthOverlay() {
-  if (overlayEl) {
-    overlayEl.remove();
-    overlayEl = null;
-  }
-  if (resolveAuth) {
-    resolveAuth();
-    resolveAuth = null;
-  }
+  if (overlayEl) { overlayEl.remove(); overlayEl = null; }
+  if (resolveAuth) { resolveAuth(); resolveAuth = null; }
 }
 
-// ── Header: email + botón Salir ──────────────────────────────────
+// ── Sincronizar sesión Supabase → localStorage ───────────────────────────────
+function syncSessionToLocalStorage(session) {
+  if (!session?.user?.email) return;
+  try {
+    const existing = localStorage.getItem('percusignal_user');
+    const u = existing ? JSON.parse(existing) : {};
+    if (!u.email) {
+      u.email = session.user.email;
+      localStorage.setItem('percusignal_user', JSON.stringify(u));
+    }
+  } catch {}
+  // Fix #3: re-renderizar el badge ahora que localStorage tiene el email.
+  // renderPlanBadge es global (inline script del app) — ya está definida porque
+  // los inline scripts corren antes que los módulos ES.
+  window.renderPlanBadge?.();
+}
+
+// ── Parchar globals de sesión ────────────────────────────────────────────────
 function injectSessionHeader(session) {
-  const slot = document.getElementById('planBadge');
-  if (!slot) return;
-
-  const email = session?.user?.email || '';
-
-  // Si ya existe el badge del plan, el fallback script lo reemplazará —
-  // en su lugar reemplazamos el logout para que use supabase.signOut
-  window.__supabaseSignOut = async () => {
-    await supabase.auth.signOut();
-    location.reload();
+  // Fix #4: cuando hay sesión activa de Supabase, showLogin() no debe abrir
+  // el modal de email-only — redirige al panel de usuario en su lugar.
+  window.showLogin = () => {
+    window.showUserPanel?.();
   };
 
-  // Parchar logout global para que use Supabase
-  window.logout = window.__supabaseSignOut;
+  // logout ya está parchado a nivel módulo (fix #5); nada más que hacer acá.
+  void session; // la sesión se usa solo en syncSessionToLocalStorage
 }
 
-// ── Punto de entrada principal ───────────────────────────────────
-export async function initAuth() {
-  // Chequear sesión activa al cargar (incluye callback OAuth/Magic Link)
-  const { data: { session } } = await supabase.auth.getSession();
-
-  if (session) {
-    // Usuario ya autenticado: sincronizar email en localStorage y salir
-    syncSessionToLocalStorage(session);
-    injectSessionHeader(session);
-    listenAuthChanges();
-    return session;
-  }
-
-  // Sin sesión: mostrar overlay bloqueante y esperar
-  return new Promise((resolve) => {
-    resolveAuth = resolve;
-    showAuthOverlay();
-    listenAuthChanges();
-  });
-}
-
+// ── Escuchar cambios de estado de auth ───────────────────────────────────────
 function listenAuthChanges() {
   supabase.auth.onAuthStateChange((event, session) => {
     if (session) {
       syncSessionToLocalStorage(session);
       injectSessionHeader(session);
       removeAuthOverlay();
-      // Si resolveAuth ya se llamó (Promise resuelta), esta llamada extra es segura
-      if (resolveAuth) {
-        resolveAuth(session);
-        resolveAuth = null;
-      }
+      if (resolveAuth) { resolveAuth(session); resolveAuth = null; }
     } else if (event === 'SIGNED_OUT') {
-      // Limpiar localStorage y recargar
       try { localStorage.removeItem('percusignal_user'); } catch {}
       location.reload();
     }
   });
 }
 
-// Escribe el email en localStorage para que getUser() del app inline lo vea
-function syncSessionToLocalStorage(session) {
-  if (!session?.user?.email) return;
-  try {
-    const existing = localStorage.getItem('percusignal_user');
-    const u = existing ? JSON.parse(existing) : {};
-    // Solo actualizar email — plan/active_until lo sincroniza syncPlanInBackground()
-    if (!u.email) {
-      u.email = session.user.email;
-      localStorage.setItem('percusignal_user', JSON.stringify(u));
-    }
-  } catch {}
+// ── Punto de entrada principal ───────────────────────────────────────────────
+export async function initAuth() {
+  // Fix #1: excepción para el flujo del club.
+  // enterApp() en club.html escribe {email, plan, active_until} en localStorage
+  // ANTES de redirigir a /app/. Si esa sesión local es válida (active_until en
+  // el futuro), el usuario ya pasó por el check del club → no bloquear con overlay.
+  if (hasValidLocalSession()) {
+    listenAuthChanges();
+    // En background: si además tiene sesión Supabase (p.ej., se autenticó antes),
+    // parchear showLogin para consistencia — sin bloquear el app.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) injectSessionHeader(session);
+    }).catch(() => {});
+    return null;
+  }
+
+  // Sin sesión local válida: chequear sesión Supabase activa
+  // (incluye el callback de vuelta de OAuth/Magic Link).
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (session) {
+    syncSessionToLocalStorage(session);
+    injectSessionHeader(session);
+    listenAuthChanges();
+    return session;
+  }
+
+  // Sin sesión de ningún tipo: mostrar overlay bloqueante.
+  return new Promise((resolve) => {
+    resolveAuth = resolve;
+    showAuthOverlay();
+    listenAuthChanges();
+  });
 }
