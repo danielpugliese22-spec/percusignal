@@ -271,21 +271,57 @@ function removeAuthOverlay() {
   if (resolveAuth) { resolveAuth(); resolveAuth = null; }
 }
 
-// ── Sincronizar sesión Supabase → localStorage ───────────────────────────────
-function syncSessionToLocalStorage(session) {
+// ── Sincronizar sesión Supabase → localStorage (email + plan) ────────────────
+// Async: espera el fetch a /api/get-user-plan antes de renderizar el badge.
+// Así el primer render del badge ya tiene el plan correcto sin recargar.
+async function syncSessionToLocalStorage(session) {
   if (!session?.user?.email) return;
+  const email = session.user.email;
+
+  // Paso 1: escribir email de inmediato para que getUser() no devuelva null
+  // si algo falla en el paso 2.
   try {
-    const existing = localStorage.getItem('percusignal_user');
-    const u = existing ? JSON.parse(existing) : {};
+    const raw = localStorage.getItem('percusignal_user');
+    const u = raw ? JSON.parse(raw) : {};
     if (!u.email) {
-      u.email = session.user.email;
+      u.email = email;
       localStorage.setItem('percusignal_user', JSON.stringify(u));
     }
   } catch {}
-  // Fix #3: re-renderizar el badge ahora que localStorage tiene el email.
-  // renderPlanBadge es global (inline script del app) — ya está definida porque
-  // los inline scripts corren antes que los módulos ES.
-  window.renderPlanBadge?.();
+
+  // Paso 2: obtener plan actualizado del servidor y persistir antes de renderizar.
+  // Equivale al syncPlanInBackground() del inline script, pero ejecutado en el
+  // orden correcto: ANTES de llamar renderPlanBadge(), no después.
+  try {
+    const res = await fetch('/api/get-user-plan?email=' + encodeURIComponent(email));
+    if (res.ok) {
+      const data = await res.json();
+      // setUser() es global (inline script), escribe a localStorage Y dispara
+      // refreshUIForCurrentPlan() → renderPlanBadge() + locks de instrumentos.
+      if (typeof window.setUser === 'function') {
+        window.setUser({
+          email,
+          plan: data.plan || 'free',
+          active_until: data.active_until || null
+        });
+      } else {
+        // Fallback si setUser aún no está disponible
+        const raw2 = localStorage.getItem('percusignal_user');
+        const u2 = raw2 ? JSON.parse(raw2) : {};
+        u2.email = email;
+        u2.plan = data.plan || 'free';
+        u2.active_until = data.active_until || null;
+        localStorage.setItem('percusignal_user', JSON.stringify(u2));
+        window.renderPlanBadge?.();
+      }
+    } else {
+      // Error de API: badge al menos muestra el email
+      window.renderPlanBadge?.();
+    }
+  } catch (e) {
+    console.warn('[auth] plan sync failed:', e.message);
+    window.renderPlanBadge?.();
+  }
 }
 
 // ── Parchar globals de sesión ────────────────────────────────────────────────
@@ -302,9 +338,11 @@ function injectSessionHeader(session) {
 
 // ── Escuchar cambios de estado de auth ───────────────────────────────────────
 function listenAuthChanges() {
-  supabase.auth.onAuthStateChange((event, session) => {
+  supabase.auth.onAuthStateChange(async (event, session) => {
     if (session) {
-      syncSessionToLocalStorage(session);
+      // Await: el overlay no se quita ni la promesa se resuelve hasta que el plan
+      // esté en localStorage, garantizando que el badge renderice correcto.
+      await syncSessionToLocalStorage(session);
       injectSessionHeader(session);
       removeAuthOverlay();
       if (resolveAuth) { resolveAuth(session); resolveAuth = null; }
@@ -336,7 +374,9 @@ export async function initAuth() {
   const { data: { session } } = await supabase.auth.getSession();
 
   if (session) {
-    syncSessionToLocalStorage(session);
+    // Await: esperar a que email + plan estén en localStorage antes de retornar,
+    // así el badge se renderiza correcto en la primera pasada de tryRender().
+    await syncSessionToLocalStorage(session);
     injectSessionHeader(session);
     listenAuthChanges();
     return session;
