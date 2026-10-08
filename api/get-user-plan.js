@@ -6,9 +6,28 @@ import { sendEmail, tplWelcomeNewUser } from './_email.js';
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
+// Devuelve el email del usuario dueño del JWT de Supabase, o null si no es válido.
+// Se usa para que el alta + mail de bienvenida solo ocurran con sesión real:
+// sin esto, cualquiera podía disparar mails a cualquier dirección vía ?email=.
+async function getSessionEmail(req) {
+  const auth = req.headers?.authorization || req.headers?.Authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+  if (!token) return null;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
+    });
+    if (!r.ok) return null;
+    const u = await r.json();
+    return u?.email ? String(u.email).toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   const email = req.query.email;
   if (!email) return res.status(400).json({ error: 'Falta email' });
@@ -27,8 +46,12 @@ export default async function handler(req, res) {
 
     const data = await r.json();
 
-    // Usuario nuevo: crear registro y enviar bienvenida
-    if (!data[0]) {
+    // Usuario nuevo: crear registro y enviar bienvenida.
+    // Solo con sesión válida cuyo email coincide con el consultado.
+    // Consultas sin token (club, retorno de MP, login legacy) solo leen el plan.
+    const isNewUser = !data[0];
+    const isOwner = isNewUser && (await getSessionEmail(req)) === String(email).toLowerCase();
+    if (isNewUser && isOwner) {
       try {
         // on_conflict=email + return=representation: si el email ya existía
         // (o si el INSERT falla) no se devuelve fila y NO se manda el mail.

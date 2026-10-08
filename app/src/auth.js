@@ -293,7 +293,9 @@ async function syncSessionToLocalStorage(session) {
   // Equivale al syncPlanInBackground() del inline script, pero ejecutado en el
   // orden correcto: ANTES de llamar renderPlanBadge(), no después.
   try {
-    const res = await fetch('/api/get-user-plan?email=' + encodeURIComponent(email));
+    // El token habilita el alta + mail de bienvenida en el server (ver api/get-user-plan.js)
+    const headers = session.access_token ? { Authorization: 'Bearer ' + session.access_token } : {};
+    const res = await fetch('/api/get-user-plan?email=' + encodeURIComponent(email), { headers });
     if (res.ok) {
       const data = await res.json();
       // setUser() es global (inline script), escribe a localStorage Y dispara
