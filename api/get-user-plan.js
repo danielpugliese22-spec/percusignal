@@ -30,22 +30,32 @@ export default async function handler(req, res) {
     // Usuario nuevo: crear registro y enviar bienvenida
     if (!data[0]) {
       try {
-        await fetch(`${SUPABASE_URL}/rest/v1/users`, {
+        // on_conflict=email + return=representation: si el email ya existía
+        // (o si el INSERT falla) no se devuelve fila y NO se manda el mail.
+        // Antes el mail salía aunque el INSERT diera 400 → loop de bienvenidas.
+        const ins = await fetch(`${SUPABASE_URL}/rest/v1/users?on_conflict=email`, {
           method: 'POST',
           headers: {
             'apikey': SUPABASE_KEY,
             'Authorization': `Bearer ${SUPABASE_KEY}`,
             'Content-Type': 'application/json',
-            'Prefer': 'resolution=ignore-duplicates,return=minimal'
+            'Prefer': 'resolution=ignore-duplicates,return=representation'
           },
           body: JSON.stringify({ email, plan: 'free' })
         });
-        if (process.env.RESEND_API_KEY) {
-          await sendEmail({
-            to: email,
-            subject: '¡Bienvenido a PercuSignal!',
-            html: tplWelcomeNewUser({ email })
-          });
+        if (!ins.ok) {
+          const detail = await ins.text().catch(() => '');
+          console.error('[welcome] INSERT failed:', ins.status, detail);
+        } else {
+          const rows = await ins.json().catch(() => []);
+          const created = Array.isArray(rows) && rows.length > 0;
+          if (created && process.env.RESEND_API_KEY) {
+            await sendEmail({
+              to: email,
+              subject: '¡Bienvenido a PercuSignal!',
+              html: tplWelcomeNewUser({ email })
+            });
+          }
         }
       } catch (e) {
         console.error('[welcome] New user error:', e.message);

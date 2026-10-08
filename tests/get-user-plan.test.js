@@ -52,7 +52,7 @@ describe('get-user-plan', () => {
   it('creates user record for new email', async () => {
     fetchMock
       .mockResolvedValueOnce({ json: async () => [] }) // SELECT → vacío
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) }) // INSERT
+      .mockResolvedValueOnce({ ok: true, status: 201, json: async () => [{ email: 'nuevo@test.com' }] }) // INSERT
       .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'email-001' }) }); // Resend
 
     const res = makeRes();
@@ -74,7 +74,7 @@ describe('get-user-plan', () => {
   it('sends welcome email to new user', async () => {
     fetchMock
       .mockResolvedValueOnce({ json: async () => [] })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ email: 'nuevo2@test.com' }] })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'email-002' }) });
 
     const res = makeRes();
@@ -105,7 +105,7 @@ describe('get-user-plan', () => {
   it('still returns 200 even when welcome email fails', async () => {
     fetchMock
       .mockResolvedValueOnce({ json: async () => [] })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({}) }) // INSERT ok
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ email: 'emailfail@test.com' }] }) // INSERT ok
       .mockRejectedValueOnce(new Error('Resend down')); // email falla
 
     const res = makeRes();
@@ -113,5 +113,40 @@ describe('get-user-plan', () => {
 
     expect(res._status).toBe(200);
     expect(res._body.plan).toBe('free');
+  });
+
+  // Regresión: loop de mails de bienvenida (oct 2026). El INSERT daba 400
+  // (NOT NULL en mp_subscription_id) y el mail se mandaba igual en cada carga.
+  it('does NOT send welcome email when INSERT returns 400', async () => {
+    fetchMock
+      .mockResolvedValueOnce({ json: async () => [] })
+      .mockResolvedValueOnce({ ok: false, status: 400, text: async () => 'not-null violation' });
+
+    const res = makeRes();
+    await handler({ query: { email: 'loop@test.com' } }, res);
+
+    expect(res._status).toBe(200);
+    expect(res._body.plan).toBe('free');
+    expect(fetchMock).toHaveBeenCalledTimes(2); // SELECT + INSERT, sin Resend
+  });
+
+  it('does NOT send welcome email when user already existed (conflict ignored)', async () => {
+    fetchMock
+      .mockResolvedValueOnce({ json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => [] });
+
+    const res = makeRes();
+    await handler({ query: { email: 'race@test.com' } }, res);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses on_conflict=email so duplicates are ignored by email', async () => {
+    fetchMock
+      .mockResolvedValueOnce({ json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] });
+
+    await handler({ query: { email: 'x@test.com' } }, makeRes());
+    expect(fetchMock.mock.calls[1][0]).toContain('on_conflict=email');
   });
 });
